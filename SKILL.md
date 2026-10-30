@@ -78,6 +78,11 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
 
 ## Inviolable Robustness Rules
 
+### Precedence Hierarchy: Sensible Defaults vs. Explicit User Override
+- **User Explicit Request (Highest Precedence)**: If the user explicitly specifies a custom style or format (e.g., APA table style instead of grid, bold heading 3, specific font or size, custom margins), agents MUST prioritize the user's explicit instructions and adapt function parameters accordingly without forcing default values.
+- **Sensible Defaults (Automatic Fallback)**: When no specific formatting instructions are provided by the user, agents MUST automatically apply the engine's built-in defaults (full grid borders, 10 pt table font, 0 cm cell padding, bold Heading 1 & 2, regular non-bold Heading 3, zero space before/after, <= 45 char limit).
+- **Technical Invariants (Always Enforced)**: Core OOXML file integrity rules (DXA dual-widths, `<w:pPr>` element order, whitespace preservation, dynamic updateFields, and safe exact-match replacement) must never be violated regardless of user styling requests.
+
 1. **Dual-Width DXA for Tables**:
    Always set table width AND individual cell widths in DXA units (1 inch = 1440 DXA). Never use percentages. Cell widths must sum to the table width.
 2. **Auto-Update Fields via Settings**:
