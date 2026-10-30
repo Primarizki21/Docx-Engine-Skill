@@ -37,6 +37,7 @@ A modular, zero-black-box toolchain for generating and manipulating professional
 | **Settings** | `scripts/settings.py` | `enable_update_fields_in_unpacked`, `enable_update_fields_in_doc` | Injecting updateFields flag into settings.xml so Word auto-refreshes TOC and SEQ |
 | **Package** | `scripts/package.py` | `unpack_docx`, `pack_docx`, `parse_xml_part`, `save_xml_part`, `validate_xml_parts` | Unpacking zip, editing raw XML, auto-repairing whitespace, and repacking |
 | **Scaffold** | `scripts/scaffold.py` | `scaffold_engine` | Copying the entire engine into any target project directory |
+| **Replace & Templates** | `scripts/replace.py` | `replace_exact_text`, `replace_placeholders`, `replace_exact_text_in_paragraph` | Safe, run-preserving exact match string and template placeholder replacement |
 
 ---
 
@@ -95,6 +96,14 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
    Always enforce `keep_with_next = True` on headings and image paragraphs so they never separate from their succeeding body paragraph or caption.
 9. **New Chapters (BAB) MUST Use Section Break (Next Page)**:
    Always separate preliminary pages (Kata Pengantar, Daftar Isi) from BAB I, and each subsequent chapter (BAB II, BAB III, dst.) using Section Break (Next Page) via `add_chapter_heading()` or `add_section_break(doc, start_type="new_page")`. NEVER use simple page breaks (`doc.add_page_break()` or Ctrl+Enter / `<w:br w:type="page"/>`) to divide chapters.
+10. **Batas Karakter Subbab, Subsubbab, dan Caption (<= 45 Karakter)**:
+    Subbab (Heading 2), subsubbab (Heading 3), serta caption gambar, tabel, dan lampiran TIDAK BOLEH melebihi 45 karakter agar judul padat dan tidak membungkus berlebihan pada TOC/LOT/LOF.
+11. **Hierarki Tebal (Bold) Heading**:
+    Heading 1 (BAB) dan Heading 2 (Subbab) wajib dicetak TEBAL (`run.bold = True`). Heading 3 (Subsubbab) dan seterusnya DILARANG BOLD (`run.bold = False`), 12 pt Regular.
+12. **Nol Spasi Sebelum dan Sesudah Seluruh Paragraf dan Heading (Zero Space Before & After)**:
+    Teks, paragraf akademik, preface, serta seluruh tingkatan Heading (Heading 1 / BAB, Heading 2 / Subbab, Heading 3 / Subsubbab, dst.) wajib 0 pt space before dan 0 pt space after (`space_before=Pt(0)`, `space_after=Pt(0)` / 0 cm). Jarak antarbaris dikontrol penuh oleh line spacing (1.5 atau 1.0).
+13. **Exact-Match Template Replacement (Larangan Penggunaan Regex)**:
+    Saat memodifikasi dokumen atau mengisi template, gunakan selalu `replace_exact_text()` atau `replace_placeholders()` dari `scripts/replace.py`. DILARANG menggunakan regex `re.sub` pada berkas .docx karena memecah run formatting dan rentan korupsi XML.
 ---
 
 ## Standard Recipes
@@ -198,4 +207,24 @@ add_numbered_paragraph(
 ```bash
 # User edits output/laporan.docx in Word, then inspect differences against git:
 uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py output/laporan.docx --git
+```
+
+### Recipe 7: Exact-Match Template Replacement & Placeholder Filling
+```python
+import docx
+from replace import replace_exact_text, replace_placeholders
+
+doc = docx.Document("template.docx")
+
+# Replace specific text across the entire document
+replace_exact_text(doc, "[JUDUL_LAPORAN]", "Sistem Klasifikasi Citra")
+
+# Bulk placeholder replacement across paragraphs, tables, and headers/footers
+mapping = {
+    "{{NAMA}}": "Prima Rizki",
+    "{{NIM}}": "164221000",
+    "{{TANGGAL}}": "30 Oktober 2026",
+}
+replace_placeholders(doc, mapping)
+doc.save("laporan_filled.docx")
 ```

@@ -190,6 +190,7 @@ Every module under `scripts/` is tightly scoped (< 120 lines) and can be used in
 | **Package** | `scripts/package.py` | Unpack zip, inspect raw XML, auto-repair missing whitespace, repack |
 | **Diff** | `scripts/diff_docx.py` | Semantic and XML diff inspection comparing Word edits against git baseline |
 | **Scaffold** | `scripts/scaffold.py` | Copies engine modules into target projects for complete ownership |
+| **Replace** | `scripts/replace.py` | Run-preserving exact match string & placeholder replacement for templates |
 
 ---
 
