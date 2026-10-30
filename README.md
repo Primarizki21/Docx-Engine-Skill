@@ -63,8 +63,8 @@ uv run docx-engine-diff ./base.docx ./edited.docx --mode xml
 | Module | Location | Primary Functions |
 |---|---|---|
 | **Sections** | `scripts/sections.py` | `set_a4_page_size`, `set_academic_margins`, `set_two_column_section`, `add_section_break` |
-| **Headings** | `scripts/headings.py` | `add_academic_heading`, `set_outline_level` |
-| **Paragraphs** | `scripts/paragraphs.py` | `set_paragraph_spacing`, `set_paragraph_indent`, `set_paragraph_alignment`, `format_academic_paragraph` |
+| **Headings** | `scripts/headings.py` | `add_academic_heading`, `add_chapter_heading`, `set_outline_level` |
+| **Paragraphs** | `scripts/paragraphs.py` | `set_paragraph_spacing`, `set_paragraph_indent`, `set_paragraph_alignment`, `format_academic_paragraph`, `format_preface_paragraph` |
 | **Typography** | `scripts/typography.py` | `format_run`, `add_formatted_run`, `add_markdown_runs`, `convert_to_smart_quotes` |
 | **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list` |
 | **Tables** | `scripts/tables.py` | `create_table`, `apply_academic_table_borders`, `apply_grid_table_borders`, `set_table_col_widths_dxa`, `set_table_compact_margins`, `format_table_cells` |
