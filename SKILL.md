@@ -104,11 +104,15 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
 10. **Batas Karakter Subbab, Subsubbab, dan Caption (<= 45 Karakter)**:
     Subbab (Heading 2), subsubbab (Heading 3), serta caption gambar, tabel, dan lampiran TIDAK BOLEH melebihi 45 karakter agar judul padat dan tidak membungkus berlebihan pada TOC/LOT/LOF.
 11. **Hierarki Tebal (Bold) Heading**:
-    Heading 1 (BAB) dan Heading 2 (Subbab) wajib dicetak TEBAL (`run.bold = True`). Heading 3 (Subsubbab) dan seterusnya DILARANG BOLD (`run.bold = False`), 12 pt Regular.
+    Heading 1 (BAB) dan Heading 2 (Subbab) wajib dicetak TEBAL (`run.bold = True`). Heading 3 (Subsubbab) dan seterusnya DILARANG BOLD (`run.bold = False`, `<w:b w:val="0"/>`), 12 pt Regular, warna teks hitam pekat.
 12. **Nol Spasi Sebelum dan Sesudah Seluruh Paragraf dan Heading (Zero Space Before & After)**:
     Teks, paragraf akademik, preface, serta seluruh tingkatan Heading (Heading 1 / BAB, Heading 2 / Subbab, Heading 3 / Subsubbab, dst.) wajib 0 pt space before dan 0 pt space after (`space_before=Pt(0)`, `space_after=Pt(0)` / 0 cm). Jarak antarbaris dikontrol penuh oleh line spacing (1.5 atau 1.0).
 13. **Exact-Match Template Replacement (Larangan Penggunaan Regex)**:
     Saat memodifikasi dokumen atau mengisi template, gunakan selalu `replace_exact_text()` atau `replace_placeholders()` dari `scripts/replace.py`. DILARANG menggunakan regex `re.sub` pada berkas .docx karena memecah run formatting dan rentan korupsi XML.
+14. **Wajib Menggunakan Native Numbered List (Larangan Penomoran Manual)**:
+    Dilarang keras mengetik manual penomoran pada paragraf biasa (`"1. Teks"`). Seluruh butir daftar berurutan wajib memanggil `add_numbered_paragraph()` atau `add_numbered_list()` dari `scripts/lists.py` untuk mengaktifkan native Word `<w:numPr>` dan menjamin *hanging indent* lurus rapi.
+15. **Standar Format Caption: Murni Italic 10 pt Tanpa Bold & Tanpa Narasi Penjelas**:
+    Seluruh caption (Gambar, Tabel, Lampiran) wajib satu baris ringkas (<= 45 karakter), murni Italic (`run.italic = True`), 10 pt, dan TANPA BOLD (`run.bold = False`). DILARANG menyisipkan break line (`\n`) atau menambahkan paragraf narasi penjelas di bawah caption.
 ---
 
 ## Standard Recipes
@@ -168,8 +172,7 @@ set_cell_shading(table.rows[0].cells[1], "F0F0F0")
 ```python
 from captions import add_seq_caption
 from references import add_cross_reference_run
-
-# Add caption with dynamic SEQ field and bookmark
+# Add caption with dynamic SEQ field and bookmark (pure italic, 10 pt, no bold, single-line)
 add_seq_caption(doc, label="Tabel", description="Komparasi Metrik Latensi", bookmark_name="tbl_latensi")
 
 # Refer to it in body text
