@@ -1,57 +1,169 @@
-# docx-engine
+# Docx Engine
 
-Modular, zero-black-box Python & OOXML toolchain for generating and manipulating professional academic and technical Word (`.docx`) documents.
+A zero-black-box Python & OOXML toolchain for generating, formatting, and inspecting professional academic, technical, and corporate Word (`.docx`) documents.
 
-## Core Features
-
-- **Astral `uv` Native**: Pure Python powered by `python-docx` and `lxml` via `uv`.
-- **Modular Micro-Scripts**: Focused modules under `scripts/` (each `< 120` lines) for surgical document operations.
-- **Read-Modify-Write**: Open existing templates or documents, modify targeted XML/nodes, and save back cleanly.
-- **Academic & Publication Standards**:
-  - Full-grid and APA scientific tables (dual DXA widths, compact margins, transparent headers).
-  - Multi-level bullet and numbered lists with native Word `w:numPr`.
-  - Academic heading hierarchy (Heading 1–4) with outline levels.
-  - Automatic dynamic TOC, List of Figures (LOF), List of Tables (LOT).
-  - Sequential captions (`SEQ`) and clickable cross-references.
-  - OMML math equations (fractions, matrices, formulas).
-  - Page numbers (`PAGE` / `NUMPAGES`) in headers/footers with A4 margin presets.
-  - Word diff & inspection tool (`docx-engine-diff`) for tracking user edits against git baselines.
+Designed as both a **universal AI Agent Skill** (compatible with Claude Code, OpenCode, OMP, Cursor, Windsurf) and an **ejectable standalone Python library**.
 
 ---
 
-## Quickstart with Astral `uv`
+## Why Docx Engine?
 
-### Installation & Sync
+Vanilla `python-docx` works for basic text, but complex academic theses, journals, and formal reports often run into frustrating OOXML quirks:
+
+| Problem in Word Generation | How Docx Engine Solves It |
+|---|---|
+| **Corrupted Documents**: Word rejects out-of-order paragraph properties | Enforces ECMA-376 schema order inside `<w:pPr>` (`pStyle` -> `numPr` -> `spacing` -> `ind` -> `jc` -> `rPr`) |
+| **Broken Chapter Pagination**: Ctrl+Enter page breaks trap chapters in one section | Automates Section Break (Next Page) per BAB so headers, footers, and page numbers isolate cleanly |
+| **Outdated TOC & Page Numbers**: Word opens files with blank or stale TOC fields | Automatically injects `w:updateFields` into `settings.xml` to force field refresh on file open |
+| **Deformed Tables**: Columns distort across pages or mask letterhead watermarks | Enforces dual-width DXA columns, transparent (no-fill) headers, and compact 0 cm padding |
+| **Inconsistent Spacing**: Manual spacing mixes up 1.5 body vs single-spaced front matter | Provides context-aware presets: 1.5 for chapter body, single 1.0 for Kata Pengantar and tables |
+
+---
+
+## Quickstart (Python API)
+
+Create a complete standardized document with a few lines of code:
+
+```python
+import docx
+from scripts import (
+    set_a4_page_size,
+    set_academic_margins,
+    add_academic_heading,
+    add_chapter_heading,
+    format_academic_paragraph,
+    format_preface_paragraph,
+    create_table,
+    apply_academic_table_borders,
+    format_table_cells,
+    add_page_number_to_footer,
+    enable_update_fields_in_doc,
+)
+
+doc = docx.Document()
+sec = doc.sections[0]
+
+# 1. Setup A4 Paper & Standard Margins (Top/Bottom/Right: 3 cm, Left: 4 cm)
+set_a4_page_size(sec)
+set_academic_margins(sec, top_cm=3.0, bottom_cm=3.0, left_cm=4.0, right_cm=3.0)
+add_page_number_to_footer(sec, align="center")
+
+# 2. Preliminary Front Matter: Kata Pengantar (Single Line Spacing 1.0)
+add_academic_heading(doc, "KATA PENGANTAR", level=1)
+p_preface = doc.add_paragraph("Segala puji dan syukur kami panjatkan ke hadirat Tuhan Yang Maha Esa...")
+format_preface_paragraph(p_preface)
+
+# 3. Chapter 1: Automatically starts with a Section Break (Next Page)
+add_chapter_heading(doc, "BAB I PENDAHULUAN")
+p_body = doc.add_paragraph("Latar belakang penelitian mengkaji arsitektur hybrid model...")
+format_academic_paragraph(p_body)
+
+# 4. Standard Table: 10 pt black font, bold header, 0 cm margins, no color shading
+table = create_table(doc, rows=3, cols=2, col_widths_inches=[3.5, 2.5])
+table.rows[0].cells[0].paragraphs[0].text = "Parameter"
+table.rows[0].cells[1].paragraphs[0].text = "Nilai"
+table.rows[1].cells[0].paragraphs[0].text = "Latency"
+table.rows[1].cells[1].paragraphs[0].text = "340 ms"
+table.rows[2].cells[0].paragraphs[0].text = "Accuracy"
+table.rows[2].cells[1].paragraphs[0].text = "94.2%"
+
+apply_academic_table_borders(table)
+format_table_cells(table)
+
+# 5. Enable Word Dynamic Field Auto-Update on File Open
+enable_update_fields_in_doc(doc)
+doc.save("laporan_akademik.docx")
+```
+
+---
+
+## Installation & Setup
+
+You can run this project using [Astral uv](https://github.com/astral-sh/uv) (recommended) or standard `pip`.
+
+### Option A: Using Astral uv (Fast & Cross-Platform)
 
 ```bash
 # Clone the repository
-git clone <repo-url> docx-engine
+git clone git@github.com:Primarizki21/Docx-Engine-Skill.git docx-engine
 cd docx-engine
 
-# Sync dependencies and virtual environment via Astral uv
-uv sync --all-extras
+# Sync dependencies in a virtual environment
+uv sync
 ```
 
-### Run Tests
+### Option B: Using Standard Python Virtualenv & pip
 
 ```bash
-uv run pytest
+# Linux / macOS
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# Windows (Command Prompt)
+python -m venv .venv
+.venv\Scripts\activate.bat
+pip install -e .
+
+# Windows (PowerShell)
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e .
 ```
 
-### CLI Commands
+---
 
-Entrypoints provided out-of-the-box:
+## Setting Up as an AI Agent Skill
+
+This repository includes a comprehensive `SKILL.md` specification and can be plugged directly into various AI coding agents.
+
+### 1. Linking into Your Agent's Skills Folder
+
+Link this repository into whichever skills directory your AI tool monitors:
+
+**On Linux / macOS:**
+```bash
+ln -s "/absolute/path/to/docx-engine" "<YOUR_SKILLS_DIRECTORY>/docx-engine"
+
+# Examples:
+# For Claude Code: ln -s "/path/to/docx-engine" "$HOME/.claude/skills/docx-engine"
+# For OMP / OpenCode: ln -s "/path/to/docx-engine" "$HOME/.omp/agent/skills/docx-engine"
+```
+
+**On Windows (PowerShell as Administrator or Developer Mode):**
+```powershell
+New-Item -ItemType SymbolicLink -Path "<YOUR_SKILLS_DIRECTORY>\docx-engine" -Target "C:\path\to\docx-engine"
+
+# Examples:
+# For Claude Code: New-Item -ItemType SymbolicLink -Path "$HOME\.claude\skills\docx-engine" -Target "C:\path\to\docx-engine"
+# For OMP / OpenCode: New-Item -ItemType SymbolicLink -Path "$HOME\.omp\agent\skills\docx-engine" -Target "C:\path\to\docx-engine"
+```
+
+### 2. Using Inside Project Workspaces (Cursor, Windsurf, Copilot, Roo)
+
+If your coding assistant operates within a specific project workspace:
+1. Copy or scaffold the `scripts/` folder into your project using the scaffold command:
+   ```bash
+   uv run docx-engine-scaffold --target ./src/engine
+   ```
+2. Reference `SKILL.md` in your project's agent instructions (such as `CLAUDE.md`, `.cursorrules`, or workspace system prompt).
+
+---
+
+## CLI Toolchain
+
+Built-in command-line tools for scaffolding, XML surgery, and document diffing:
 
 ```bash
-# Eject / scaffold the engine into another project
+# 1. Eject / scaffold the engine directly into a target project
 uv run docx-engine-scaffold --target /path/to/project/src/engine
 
-# Unpack and repack docx packages with XML auto-repair
+# 2. Unpack docx to raw XML, auto-repair whitespace, and repack cleanly
 uv run docx-engine-package unpack ./document.docx ./unpacked
 uv run docx-engine-package validate ./unpacked
 uv run docx-engine-package pack ./unpacked ./repaired.docx
 
-# Diff Word documents against git HEAD or between versions
+# 3. Diff Word document changes against git HEAD or between versions
 uv run docx-engine-diff ./document.docx --git
 uv run docx-engine-diff ./base.docx ./edited.docx --mode xml
 ```
@@ -60,26 +172,27 @@ uv run docx-engine-diff ./base.docx ./edited.docx --mode xml
 
 ## Modules Overview
 
-| Module | Location | Primary Functions |
+Every module under `scripts/` is tightly scoped (< 120 lines) and can be used independently:
+
+| Module | File | Key Capabilities |
 |---|---|---|
-| **Sections** | `scripts/sections.py` | `set_a4_page_size`, `set_academic_margins`, `set_two_column_section`, `add_section_break` |
-| **Headings** | `scripts/headings.py` | `add_academic_heading`, `add_chapter_heading`, `set_outline_level` |
-| **Paragraphs** | `scripts/paragraphs.py` | `set_paragraph_spacing`, `set_paragraph_indent`, `set_paragraph_alignment`, `format_academic_paragraph`, `format_preface_paragraph` |
-| **Typography** | `scripts/typography.py` | `format_run`, `add_formatted_run`, `add_markdown_runs`, `convert_to_smart_quotes` |
-| **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list` |
-| **Tables** | `scripts/tables.py` | `create_table`, `apply_academic_table_borders`, `apply_grid_table_borders`, `set_table_col_widths_dxa`, `set_table_compact_margins`, `format_table_cells` |
-| **Media** | `scripts/media.py` | `add_image_with_caption` |
-| **Headers/Footers** | `scripts/headers_footers.py` | `add_page_number_to_footer`, `add_page_number_with_total`, `set_running_header` |
-| **References** | `scripts/references.py` | `add_bookmark`, `add_cross_reference_run`, `add_citation_text` |
-| **Table of Contents** | `scripts/toc.py` | `add_table_of_contents`, `add_list_of_figures`, `add_list_of_tables` |
-| **Equations** | `scripts/equations.py` | `add_omml_block`, `add_inline_math`, `add_centered_equation`, `make_omml_fraction` |
-| **Settings** | `scripts/settings.py` | `enable_update_fields_in_unpacked`, `enable_update_fields_in_doc` |
-| **Package** | `scripts/package.py` | `unpack_docx`, `pack_docx`, `parse_xml_part`, `save_xml_part`, `validate_xml_parts` |
-| **Scaffold** | `scripts/scaffold.py` | `scaffold_engine` |
-| **Diff** | `scripts/diff_docx.py` | `run_diff_inspection` |
+| **Sections** | `scripts/sections.py` | A4/Letter sizing, 4-3-3-3 cm margins, two-column layout, section breaks |
+| **Headings** | `scripts/headings.py` | Heading 1 to 4 outline levels, `add_chapter_heading` with section break |
+| **Paragraphs** | `scripts/paragraphs.py` | 1.5 academic body spacing, 1.0 Kata Pengantar spacing, alignments, indents |
+| **Tables** | `scripts/tables.py` | Dual DXA widths, APA and Full-Grid borders, 0 cm padding, black 10 pt font |
+| **Typography** | `scripts/typography.py` | Character runs, Times New Roman presets, markdown parsing, smart quotes |
+| **Lists** | `scripts/lists.py` | Native Word `w:numPr` multi-level bullets and numbered lists |
+| **TOC & Fields** | `scripts/toc.py` | Dynamic Table of Contents, List of Figures (LOF), List of Tables (LOT) |
+| **Captions** | `scripts/captions.py` | Dynamic `SEQ` captions for figures and tables with bookmark links |
+| **Equations** | `scripts/equations.py` | Native Office Math (OMML) blocks, fractions, centered formulas |
+| **Headers/Footers**| `scripts/headers_footers.py` | Running headers, `PAGE` and `NUMPAGES` footer fields |
+| **Settings** | `scripts/settings.py` | Injects `w:updateFields` to guarantee dynamic fields update on file open |
+| **Package** | `scripts/package.py` | Unpack zip, inspect raw XML, auto-repair missing whitespace, repack |
+| **Diff** | `scripts/diff_docx.py` | Semantic and XML diff inspection comparing Word edits against git baseline |
+| **Scaffold** | `scripts/scaffold.py` | Copies engine modules into target projects for complete ownership |
 
 ---
 
 ## License
 
-MIT
+MIT License.
