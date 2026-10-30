@@ -3,7 +3,7 @@ from __future__ import annotations
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt
+from docx.shared import Pt, RGBColor
 from docx.text.paragraph import Paragraph
 try:
     from .core_xml import insert_ordered_p_pr
@@ -20,6 +20,7 @@ def add_academic_heading(
     center_if_level_1: bool = True,
     section_break: bool = False,
     strict_length: bool = False,
+    bold: bool | None = None,
 ) -> Paragraph:
     if level >= 2 and len(text) > 45:
         msg = f"Judul heading level {level} melebihi batas 45 karakter ({len(text)} karakter): '{text}'"
@@ -45,14 +46,14 @@ def add_academic_heading(
     else:
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-    is_bold = level <= 2
+    is_bold = (level <= 2) if bold is None else bold
     for run in p.runs:
         run.font.name = font_name
         run.bold = is_bold
         run.font.size = Pt(14 if level == 1 else (13 if level == 2 else 12))
+        run.font.color.rgb = RGBColor(0, 0, 0)
     set_outline_level(p, level - 1)
     return p
-
 
 def set_outline_level(paragraph: Paragraph, level: int) -> Paragraph:
     pPr = paragraph._p.get_or_add_pPr()

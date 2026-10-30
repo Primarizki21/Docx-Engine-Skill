@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.text.paragraph import Paragraph
 
 
@@ -33,9 +34,11 @@ def add_image_with_caption(
     p_cap.paragraph_format.space_after = Pt(10)
     p_cap.paragraph_format.keep_with_next = False
 
-    run_cap = p_cap.add_run(caption)
+    clean_cap = re.sub(r"[\r\n]+", " ", caption or "").strip()
+    run_cap = p_cap.add_run(clean_cap)
     run_cap.font.name = caption_font_name
     run_cap.font.size = Pt(caption_size_pt)
+    run_cap.bold = False
     run_cap.italic = True
-
+    run_cap.font.color.rgb = RGBColor(0, 0, 0)
     return p_img, p_cap
