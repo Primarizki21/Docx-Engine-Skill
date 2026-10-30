@@ -1,0 +1,26 @@
+[project]
+name = "docx-engine"
+version = "0.1.0"
+description = "Modular, robust Python OOXML engine for academic and technical DOCX generation and editing"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "python-docx>=1.1.0",
+    "lxml>=5.0.0",
+]
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+docx-engine-scaffold = "scripts.scaffold:main"
+docx-engine-package = "scripts.package:main"
+docx-engine-diff = "scripts.diff_docx:main"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
