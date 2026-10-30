@@ -18,6 +18,7 @@ from .paragraphs import (
     set_paragraph_spacing,
 )
 from .references import add_bookmark, add_citation_text, add_cross_reference_run
+from .replace import replace_exact_text, replace_exact_text_in_paragraph, replace_placeholders
 from .sections import (
     add_section_break,
     set_a4_page_size,
@@ -90,6 +91,9 @@ __all__ = [
     "add_formatted_run",
     "add_markdown_runs",
     "run_diff_inspection",
+    "replace_exact_text",
+    "replace_exact_text_in_paragraph",
+    "replace_placeholders",
     "add_table_of_contents",
     "add_list_of_figures",
     "add_list_of_tables",

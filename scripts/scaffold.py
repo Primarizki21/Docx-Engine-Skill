@@ -23,6 +23,7 @@ MODULE_FILES = [
     "captions.py",
     "equations.py",
     "diff_docx.py",
+    "replace.py",
 ]
 
 
