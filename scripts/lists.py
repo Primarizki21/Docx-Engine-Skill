@@ -62,7 +62,7 @@ def add_numbered_paragraph(
     style: str = "List Paragraph",
     font_name: str = "Times New Roman",
     size_pt: float = 12.0,
-    space_before_pt: float = 3.0,
+    space_before_pt: float = 0.0,
     space_after_pt: float = 0.0,
     line_spacing: float = 1.15,
     ind_left_dxa: int | None = None,

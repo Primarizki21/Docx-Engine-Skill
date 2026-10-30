@@ -19,7 +19,14 @@ def add_seq_caption(
     font_name: str = "Times New Roman",
     size_pt: float = 10.0,
     align: str = "center",
+    strict_length: bool = False,
 ) -> Paragraph:
+    if description and len(description) > 45:
+        msg = f"Deskripsi caption {label} melebihi batas 45 karakter ({len(description)} karakter): '{description}'"
+        if strict_length:
+            raise ValueError(msg)
+        import warnings
+        warnings.warn(msg, UserWarning, stacklevel=2)
     p = document.add_paragraph()
     align_map = {
         "left": WD_ALIGN_PARAGRAPH.LEFT,

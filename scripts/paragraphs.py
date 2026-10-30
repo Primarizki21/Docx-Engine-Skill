@@ -8,7 +8,7 @@ from docx.text.paragraph import Paragraph
 def set_paragraph_spacing(
     p: Paragraph,
     before_pt: float = 0.0,
-    after_pt: float = 6.0,
+    after_pt: float = 0.0,
     line_spacing: float = 1.15,
 ) -> Paragraph:
     fmt = p.paragraph_format
@@ -51,7 +51,7 @@ def format_academic_paragraph(
     fmt.line_spacing = line_spacing
     fmt.first_line_indent = Inches(first_line_indent_cm / 2.54)
     fmt.space_before = Pt(0)
-    fmt.space_after = Pt(4)
+    fmt.space_after = Pt(0)
     p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     return p
 
@@ -93,7 +93,7 @@ def format_preface_paragraph(
     first_line_indent_cm: float = 1.0,
     line_spacing: float = 1.0,
     space_before_pt: float = 0.0,
-    space_after_pt: float = 4.0,
+    space_after_pt: float = 0.0,
 ) -> Paragraph:
     """Memformat paragraf Kata Pengantar: spasi single 1.0 (line=240), indent 1 cm, dan rata justified."""
     fmt = p.paragraph_format

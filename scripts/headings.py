@@ -19,7 +19,14 @@ def add_academic_heading(
     font_name: str = "Times New Roman",
     center_if_level_1: bool = True,
     section_break: bool = False,
+    strict_length: bool = False,
 ) -> Paragraph:
+    if level >= 2 and len(text) > 45:
+        msg = f"Judul heading level {level} melebihi batas 45 karakter ({len(text)} karakter): '{text}'"
+        if strict_length:
+            raise ValueError(msg)
+        import warnings
+        warnings.warn(msg, UserWarning, stacklevel=2)
     if section_break and len(document.paragraphs) > 0:
         add_section_break(document, start_type="new_page")
     heading_style = f"Heading {level}"
@@ -30,19 +37,19 @@ def add_academic_heading(
 
     fmt = p.paragraph_format
     fmt.keep_with_next = True
-    fmt.space_before = Pt(12 if level == 1 else 8)
-    fmt.space_after = Pt(6)
+    fmt.space_before = Pt(0)
+    fmt.space_after = Pt(0)
 
     if level == 1 and center_if_level_1:
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     else:
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
+    is_bold = level <= 2
     for run in p.runs:
         run.font.name = font_name
-        run.bold = True
+        run.bold = is_bold
         run.font.size = Pt(14 if level == 1 else (13 if level == 2 else 12))
-
     set_outline_level(p, level - 1)
     return p
 
