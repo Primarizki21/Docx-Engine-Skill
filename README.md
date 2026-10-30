@@ -17,6 +17,9 @@ Vanilla `python-docx` works for basic text, but complex academic theses, journal
 | **Outdated TOC & Page Numbers**: Word opens files with blank or stale TOC fields | Automatically injects `w:updateFields` into `settings.xml` to force field refresh on file open |
 | **Deformed Tables**: Columns distort across pages or mask letterhead watermarks | Enforces dual-width DXA columns, transparent (no-fill) headers, and compact 0 cm padding |
 | **Inconsistent Spacing**: Manual spacing mixes up 1.5 body vs single-spaced front matter | Provides context-aware presets: 1.5 for chapter body, single 1.0 for Kata Pengantar and tables |
+| **Ragged / Fragile Numbering**: Manual string numbers ("1. Text") lack hanging indents and cannot sync | Enforces native Word `<w:numPr>` (`numId`, `ilvl`) with automatic prefix stripping so lines align cleanly |
+| **Inconsistent Captions & AI Slop**: Captions mix bold styles or inject multi-line narrative explanations | Enforces pure 10 pt italic non-bold captions, dynamic `SEQ` fields, and single-line titles (<= 45 chars) |
+| **Accidental Bold Subsubbabs**: Word's default template renders Heading 3 in bold and accent blue | Locks Heading 1-2 to bold and Heading 3-4 to regular non-bold black text with 0 pt spacing |
 
 ---
 
@@ -33,8 +36,10 @@ from scripts import (
     add_chapter_heading,
     format_academic_paragraph,
     format_preface_paragraph,
+    add_numbered_paragraph,
+    add_seq_caption,
     create_table,
-    apply_academic_table_borders,
+    apply_grid_table_borders,
     format_table_cells,
     add_page_number_to_footer,
     enable_update_fields_in_doc,
@@ -58,7 +63,18 @@ add_chapter_heading(doc, "BAB I PENDAHULUAN")
 p_body = doc.add_paragraph("Latar belakang penelitian mengkaji arsitektur hybrid model...")
 format_academic_paragraph(p_body)
 
-# 4. Standard Table: 10 pt black font, bold header, 0 cm margins, no color shading
+# 4. Subbab (Heading 2 = Bold) and Subsubbab (Heading 3 = Regular Non-Bold)
+add_academic_heading(doc, "1.1 Latar Belakang Masalah", level=2)
+add_academic_heading(doc, "1.1.1 Identifikasi Gap Riset", level=3)
+
+# 5. Native Word Numbered List with Hanging Indent
+add_numbered_paragraph(doc, "Tahap 1: Evaluasi latensi awal dan throughput pipeline.", num_id=1, ilvl=0)
+add_numbered_paragraph(doc, "Tahap 2: Optimasi bobot attention dan pemangkasan model.", num_id=1, ilvl=0)
+
+# 6. Sequential Caption (Pure Italic, 10 pt, No Bold, Single-Line)
+add_seq_caption(doc, label="Tabel", description="Komparasi Metrik Latensi")
+
+# 7. Standard Table: 10 pt black font, bold header, 0 cm margins, full grid borders
 table = create_table(doc, rows=3, cols=2, col_widths_inches=[3.5, 2.5])
 table.rows[0].cells[0].paragraphs[0].text = "Parameter"
 table.rows[0].cells[1].paragraphs[0].text = "Nilai"
@@ -67,10 +83,10 @@ table.rows[1].cells[1].paragraphs[0].text = "340 ms"
 table.rows[2].cells[0].paragraphs[0].text = "Accuracy"
 table.rows[2].cells[1].paragraphs[0].text = "94.2%"
 
-apply_academic_table_borders(table)
+apply_grid_table_borders(table)
 format_table_cells(table)
 
-# 5. Enable Word Dynamic Field Auto-Update on File Open
+# 8. Enable Word Dynamic Field Auto-Update on File Open
 enable_update_fields_in_doc(doc)
 doc.save("laporan_akademik.docx")
 ```
@@ -177,13 +193,13 @@ Every module under `scripts/` is tightly scoped (< 120 lines) and can be used in
 | Module | File | Key Capabilities |
 |---|---|---|
 | **Sections** | `scripts/sections.py` | A4/Letter sizing, 4-3-3-3 cm margins, two-column layout, section breaks |
-| **Headings** | `scripts/headings.py` | Heading 1 to 4 outline levels, `add_chapter_heading` with section break |
+| **Headings** | `scripts/headings.py` | Heading 1-2 bold, Heading 3-4 regular non-bold, zero space before/after |
 | **Paragraphs** | `scripts/paragraphs.py` | 1.5 academic body spacing, 1.0 Kata Pengantar spacing, alignments, indents |
-| **Tables** | `scripts/tables.py` | Dual DXA widths, APA and Full-Grid borders, 0 cm padding, black 10 pt font |
+| **Tables** | `scripts/tables.py` | Dual DXA widths, Full-Grid and APA borders, 0 cm padding, black 10 pt font |
 | **Typography** | `scripts/typography.py` | Character runs, Times New Roman presets, markdown parsing, smart quotes |
-| **Lists** | `scripts/lists.py` | Native Word `w:numPr` multi-level bullets and numbered lists |
+| **Lists** | `scripts/lists.py` | Native Word `w:numPr` numbered lists with hanging indent, prefix stripping |
 | **TOC & Fields** | `scripts/toc.py` | Dynamic Table of Contents, List of Figures (LOF), List of Tables (LOT) |
-| **Captions** | `scripts/captions.py` | Dynamic `SEQ` captions for figures and tables with bookmark links |
+| **Captions** | `scripts/captions.py` | Pure italic 10 pt captions without bold, single-line SEQ fields, bookmarks |
 | **Equations** | `scripts/equations.py` | Native Office Math (OMML) blocks, fractions, centered formulas |
 | **Headers/Footers**| `scripts/headers_footers.py` | Running headers, `PAGE` and `NUMPAGES` footer fields |
 | **Settings** | `scripts/settings.py` | Injects `w:updateFields` to guarantee dynamic fields update on file open |
