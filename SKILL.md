@@ -88,8 +88,8 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
    Any `<w:t>` containing leading or trailing spaces must include `xml:space="preserve"`. The `package.py` packer automatically repairs this.
 5. **EMU Scaling for Media**:
    Always convert image dimensions to EMUs (English Metric Units: 914,400 EMUs = 1 inch, 360,000 EMUs = 1 cm).
-6. **Strict Transparent Table Headers & Default Config**:
-   Never inject `<w:shd w:fill="FFFFFF"/>` or `clear` unless a solid background is explicitly needed. Omit `<w:shd>` entirely so that background letterheads, kop frames, and watermark images are not masked. Enforce table defaults: font size 10 pt, explicit black font (`RGBColor(0, 0, 0)`), bold header row, 0 cm margin/padding on all sides, and 0 pt paragraph spacing/indent via `format_table_cells()`.
+6. **Strict Transparent Table Headers & Default Full Grid Config**:
+   Never inject `<w:shd w:fill="FFFFFF"/>` or `clear` unless a solid background is explicitly needed. Omit `<w:shd>` entirely so that background letterheads, kop frames, and watermark images are not masked. Enforce table defaults: solid 0.5 pt grid borders on all sides (`sz=4` via `create_table()` default), font size 10 pt, explicit black font (`RGBColor(0, 0, 0)`), bold header row, 0 cm margin/padding on all sides, and 0 pt paragraph spacing/indent via `format_table_cells()`.
 7. **Context-Aware Line Spacing**:
    Use 1.5 line spacing (`line="360" lineRule="auto"`) for academic chapter body text, but enforce single 1.0 line spacing (`line="240" lineRule="auto"`) for Kata Pengantar (`format_preface_paragraph`), table cells, and compact TOC entries.
 8. **Anti-Orphan Pagination Guards**:

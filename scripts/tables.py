@@ -17,6 +17,7 @@ def create_table(
     col_widths_inches: list[float] | None = None,
     align: str = "center",
     compact_margins: bool = True,
+    border_style: str = "grid",
 ) -> Table:
     table = document.add_table(rows=rows, cols=cols)
     align_map = {
@@ -28,6 +29,11 @@ def create_table(
     if compact_margins:
         set_table_compact_margins(table, top_dxa=0, bottom_dxa=0, left_dxa=0, right_dxa=0)
 
+
+    if border_style == "grid":
+        apply_grid_table_borders(table, sz=4)
+    elif border_style == "academic":
+        apply_academic_table_borders(table)
 
     if col_widths_inches and len(col_widths_inches) == cols:
         set_table_col_widths_inches(table, col_widths_inches)
@@ -79,6 +85,9 @@ def set_cell_margins(cell: _Cell, top_pt: int = 4, bottom_pt: int = 4, left_pt: 
 def apply_academic_table_borders(table: Table) -> Table:
     # Standar format tabel ilmiah / APA
     tblPr = table._tbl.tblPr
+    existing_borders = tblPr.find(qn("w:tblBorders"))
+    if existing_borders is not None:
+        tblPr.remove(existing_borders)
     borders = parse_xml(
         f'<w:tblBorders {nsdecls("w")}>'
         f'  <w:top w:val="single" w:sz="8" w:space="0" w:color="000000"/>'
@@ -214,6 +223,7 @@ def format_table_cells(
     ensure_no_color: bool = True,
     compact_margins: bool = True,
     font_color_black: bool = True,
+    ensure_grid_borders: bool = True,
 ) -> None:
     """Memformat seluruh sel tabel: font 10 pt hitam, single spasi (line=240), space after/before=0,
     margin sel rapat 0 cm, serta perataan yang proporsional."""
@@ -222,6 +232,9 @@ def format_table_cells(
     if compact_margins:
         set_table_compact_margins(table, top_dxa=0, bottom_dxa=0, left_dxa=0, right_dxa=0)
 
+
+    if ensure_grid_borders and table._tbl.tblPr.find(qn("w:tblBorders")) is None:
+        apply_grid_table_borders(table, sz=4)
     for row_idx, row in enumerate(table.rows):
         is_header = (row_idx == 0)
         for col_idx, cell in enumerate(row.cells):
