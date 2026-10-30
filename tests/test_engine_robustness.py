@@ -11,11 +11,11 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from captions import add_seq_caption
 from core_xml import NAMESPACES, qn
 from headers_footers import add_page_number_to_footer, add_page_number_with_total, set_running_header
-from headings import add_academic_heading
+from headings import add_academic_heading, add_chapter_heading
 from lists import add_bullet_item, add_numbered_item
 from equations import add_centered_equation, make_omml_fraction
 from package import pack_docx, parse_xml_part, unpack_docx, validate_xml_parts
-from paragraphs import format_academic_paragraph
+from paragraphs import format_academic_paragraph, format_preface_paragraph
 from references import add_bookmark, add_citation_text, add_cross_reference_run
 from scaffold import scaffold_engine
 from sections import add_section_break, set_a4_page_size, set_academic_margins, set_two_column_section
@@ -36,6 +36,9 @@ from lists import (
 )
 from typography import add_markdown_runs
 from diff_docx import run_diff_inspection
+from docx.enum.section import WD_SECTION_START
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt, RGBColor
 
 
 def test_full_academic_document_generation(tmp_path: Path):
@@ -236,3 +239,102 @@ def test_diff_docx_inspection(tmp_path: Path):
     xml_diff = run_diff_inspection(file1, file2, mode="xml")
     assert "---" in xml_diff
     assert "+++" in xml_diff
+
+
+def test_kata_pengantar_and_chapter_section_breaks(tmp_path: Path):
+    doc = docx.Document()
+
+    # 1. Test Kata Pengantar formatting (line spacing 1.0)
+    p_pref_title = add_academic_heading(doc, "KATA PENGANTAR", level=1)
+    assert p_pref_title.text == "KATA PENGANTAR"
+
+    p_pref = doc.add_paragraph("Segala puji dan syukur kami panjatkan ke hadirat Tuhan Yang Maha Esa.")
+    format_preface_paragraph(p_pref)
+    assert p_pref.paragraph_format.line_spacing == 1.0
+    assert round(p_pref.paragraph_format.first_line_indent.cm, 1) == 1.0
+    assert p_pref.paragraph_format.space_before == Pt(0)
+    assert p_pref.paragraph_format.space_after == Pt(4)
+    assert p_pref.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    assert len(doc.sections) == 1
+
+    # 2. Add BAB I using add_chapter_heading -> MUST create Section Break (Next Page)
+    h_bab1 = add_chapter_heading(doc, "BAB I PENDAHULUAN")
+    assert h_bab1.text == "BAB I PENDAHULUAN"
+    assert len(doc.sections) == 2
+    assert doc.sections[1].start_type == WD_SECTION_START.NEW_PAGE
+
+    p_body = doc.add_paragraph("Latar belakang penelitian.")
+    format_academic_paragraph(p_body)
+
+    # 3. Add BAB II using add_chapter_heading -> MUST create Section Break (Next Page)
+    h_bab2 = add_chapter_heading(doc, "BAB II TINJAUAN PUSTAKA")
+    assert h_bab2.text == "BAB II TINJAUAN PUSTAKA"
+    assert len(doc.sections) == 3
+    assert doc.sections[2].start_type == WD_SECTION_START.NEW_PAGE
+
+    # Verify saved document has no page break (<w:br w:type="page"/>) for chapter separation
+    out_docx = tmp_path / "test_chapters.docx"
+    doc.save(str(out_docx))
+
+    reloaded = docx.Document(str(out_docx))
+    assert len(reloaded.sections) == 3
+    page_breaks = [br for br in reloaded._body._element.findall(".//w:br", NAMESPACES) if br.attrib.get(qn("w:type")) == "page"]
+    assert len(page_breaks) == 0
+
+
+def test_table_default_configurations(tmp_path: Path):
+    doc = docx.Document()
+    table = create_table(doc, rows=2, cols=2)
+
+    # Verify create_table applies 0 margin by default
+    tblPr = table._tbl.tblPr
+    tblCellMar = tblPr.find(qn("w:tblCellMar"))
+    assert tblCellMar is not None
+    for side in ["top", "left", "bottom", "right"]:
+        m = tblCellMar.find(qn(f"w:{side}"))
+        assert m is not None
+        assert m.attrib.get(qn("w:w")) == "0"
+
+    # Populate cell contents
+    table.rows[0].cells[0].paragraphs[0].text = "Header Kolom 1"
+    table.rows[0].cells[1].paragraphs[0].text = "Header Kolom 2"
+    table.rows[1].cells[0].paragraphs[0].text = "Data Baris 1"
+    table.rows[1].cells[1].paragraphs[0].text = "Data Baris 2"
+
+    # Apply format_table_cells
+    format_table_cells(table)
+
+    # Verify row 0 header properties
+    for cell in table.rows[0].cells:
+        assert cell._tc.get_or_add_tcPr().find(qn("w:shd")) is None
+        p = cell.paragraphs[0]
+        assert p.paragraph_format.line_spacing == 1.0
+        assert p.paragraph_format.space_before == Pt(0)
+        assert p.paragraph_format.space_after == Pt(0)
+        assert p.paragraph_format.first_line_indent == Pt(0)
+        assert p.paragraph_format.left_indent == Pt(0)
+        assert p.paragraph_format.right_indent == Pt(0)
+        for r in p.runs:
+            assert r.bold is True
+            assert r.font.size == Pt(10.0)
+            assert r.font.color.rgb == RGBColor(0, 0, 0)
+
+    # Verify row 1 data properties
+    for cell in table.rows[1].cells:
+        assert cell._tc.get_or_add_tcPr().find(qn("w:shd")) is None
+        p = cell.paragraphs[0]
+        assert p.paragraph_format.line_spacing == 1.0
+        assert p.paragraph_format.space_before == Pt(0)
+        assert p.paragraph_format.space_after == Pt(0)
+        assert p.paragraph_format.first_line_indent == Pt(0)
+        assert p.paragraph_format.left_indent == Pt(0)
+        assert p.paragraph_format.right_indent == Pt(0)
+        for r in p.runs:
+            assert r.bold is not True
+            assert r.font.size == Pt(10.0)
+            assert r.font.color.rgb == RGBColor(0, 0, 0)
+
+    out_docx = tmp_path / "test_table_defaults.docx"
+    doc.save(str(out_docx))
+    assert out_docx.exists()

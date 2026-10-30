@@ -3,13 +3,14 @@ from __future__ import annotations
 from .captions import add_seq_caption
 from .core_xml import NAMESPACES, W_NS, ensure_xml_space, insert_ordered_p_pr, qn
 from .headers_footers import add_page_number_to_footer, add_page_number_with_total, set_running_header
-from .headings import add_academic_heading, set_outline_level
+from .headings import add_academic_heading, add_chapter_heading, set_outline_level
 from .lists import add_bullet_item, add_numbered_item, add_numbered_list, add_numbered_paragraph, attach_num_pr, strip_manual_numbering_prefix
 from .equations import add_centered_equation, add_inline_math, add_omml_block, make_omml_fraction
 from .media import add_image_with_caption
 from .package import pack_docx, parse_xml_part, save_xml_part, unpack_docx, validate_xml_parts
 from .paragraphs import (
     format_academic_paragraph,
+    format_preface_paragraph,
     format_table_cell_paragraph,
     format_toc_entry_paragraph,
     set_paragraph_alignment,
@@ -43,6 +44,7 @@ from .diff_docx import run_diff_inspection
 
 __all__ = [
     "add_academic_heading",
+    "add_chapter_heading",
     "set_outline_level",
     "add_page_number_to_footer",
     "add_page_number_with_total",
@@ -60,6 +62,7 @@ __all__ = [
     "save_xml_part",
     "validate_xml_parts",
     "format_academic_paragraph",
+    "format_preface_paragraph",
     "format_table_cell_paragraph",
     "format_toc_entry_paragraph",
     "set_paragraph_alignment",

@@ -86,3 +86,20 @@ def format_toc_entry_paragraph(
     fmt.space_before = Pt(space_before_pt)
     fmt.space_after = Pt(space_after_pt)
     return p
+
+
+def format_preface_paragraph(
+    p: Paragraph,
+    first_line_indent_cm: float = 1.0,
+    line_spacing: float = 1.0,
+    space_before_pt: float = 0.0,
+    space_after_pt: float = 4.0,
+) -> Paragraph:
+    """Memformat paragraf Kata Pengantar: spasi single 1.0 (line=240), indent 1 cm, dan rata justified."""
+    fmt = p.paragraph_format
+    fmt.line_spacing = line_spacing
+    fmt.first_line_indent = Inches(first_line_indent_cm / 2.54)
+    fmt.space_before = Pt(space_before_pt)
+    fmt.space_after = Pt(space_after_pt)
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    return p

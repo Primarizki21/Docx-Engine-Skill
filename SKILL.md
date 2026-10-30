@@ -23,8 +23,8 @@ A modular, zero-black-box toolchain for generating and manipulating professional
 | Module | Location | Primary Functions | Typical Use Case |
 |---|---|---|---|
 | **Sections** | `scripts/sections.py` | `set_a4_page_size`, `set_academic_margins`, `set_two_column_section`, `add_section_break` | Setting up A4 paper, standard 4-3-3-3 cm margins, or multi-column sections |
-| **Headings** | `scripts/headings.py` | `add_academic_heading`, `set_outline_level` | Adding Heading 1 to 4 with proper outline levels for Table of Contents |
-| **Paragraphs** | `scripts/paragraphs.py` | `set_paragraph_spacing`, `set_paragraph_indent`, `set_paragraph_alignment`, `format_academic_paragraph` | Setting 1.5 line spacing, 1 cm first-line indent, and justified text |
+| **Headings** | `scripts/headings.py` | `add_academic_heading`, `add_chapter_heading`, `set_outline_level` | Adding Heading 1 to 4 with proper outline levels, and creating new chapters with section breaks |
+| **Paragraphs** | `scripts/paragraphs.py` | `set_paragraph_spacing`, `set_paragraph_indent`, `set_paragraph_alignment`, `format_academic_paragraph`, `format_preface_paragraph` | Setting 1.5 line spacing for body, single 1.0 spacing for Kata Pengantar, and 1 cm first-line indent |
 | **Typography** | `scripts/typography.py` | `format_run`, `add_formatted_run`, `convert_to_smart_quotes` | Font family (Times New Roman), sizes, bold, italic, and typographic quotes |
 | **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list`, `attach_num_pr`, `strip_manual_numbering_prefix` | Adding multi-level bullet points and numbered lists with native Word numPr and markdown runs |
 | **Tables** | `scripts/tables.py` | `create_table`, `apply_academic_table_borders`, `apply_grid_table_borders`, `set_table_col_widths_dxa`, `set_table_compact_margins`, `remove_cell_shading`, `format_table_cells` | Building APA or Full-Grid tables with exact DXA widths, zero shading (no color), compact padding, and single line spacing |
@@ -75,7 +75,7 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan.doc
 uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_base.docx ./laporan_edited.docx --mode xml
 ```
 
-## Five Inviolable Robustness Rules
+## Inviolable Robustness Rules
 
 1. **Dual-Width DXA for Tables**:
    Always set table width AND individual cell widths in DXA units (1 inch = 1440 DXA). Never use percentages. Cell widths must sum to the table width.
@@ -87,12 +87,14 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
    Any `<w:t>` containing leading or trailing spaces must include `xml:space="preserve"`. The `package.py` packer automatically repairs this.
 5. **EMU Scaling for Media**:
    Always convert image dimensions to EMUs (English Metric Units: 914,400 EMUs = 1 inch, 360,000 EMUs = 1 cm).
-6. **Strict Transparent (No Color) Table Headers**:
-   Never inject `<w:shd w:fill="FFFFFF"/>` or `clear` unless a solid background is explicitly needed. Omit `<w:shd>` entirely so that background letterheads, kop frames, and watermark images are not masked by an opaque white block.
+6. **Strict Transparent Table Headers & Default Config**:
+   Never inject `<w:shd w:fill="FFFFFF"/>` or `clear` unless a solid background is explicitly needed. Omit `<w:shd>` entirely so that background letterheads, kop frames, and watermark images are not masked. Enforce table defaults: font size 10 pt, explicit black font (`RGBColor(0, 0, 0)`), bold header row, 0 cm margin/padding on all sides, and 0 pt paragraph spacing/indent via `format_table_cells()`.
 7. **Context-Aware Line Spacing**:
-   Use 1.5 line spacing (`line="360" lineRule="auto"`) for body text, but enforce single 1.0 line spacing (`line="240" lineRule="auto"`) with 0 pt spacing after for table cells and compact TOC entries.
+   Use 1.5 line spacing (`line="360" lineRule="auto"`) for academic chapter body text, but enforce single 1.0 line spacing (`line="240" lineRule="auto"`) for Kata Pengantar (`format_preface_paragraph`), table cells, and compact TOC entries.
 8. **Anti-Orphan Pagination Guards**:
    Always enforce `keep_with_next = True` on headings and image paragraphs so they never separate from their succeeding body paragraph or caption.
+9. **New Chapters (BAB) MUST Use Section Break (Next Page)**:
+   Always separate preliminary pages (Kata Pengantar, Daftar Isi) from BAB I, and each subsequent chapter (BAB II, BAB III, dst.) using Section Break (Next Page) via `add_chapter_heading()` or `add_section_break(doc, start_type="new_page")`. NEVER use simple page breaks (`doc.add_page_break()` or Ctrl+Enter / `<w:br w:type="page"/>`) to divide chapters.
 ---
 
 ## Standard Recipes
@@ -100,10 +102,10 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
 ### Recipe 1: Standard Academic Report Document Setup (Indonesia Format)
 ```python
 import docx
-from sections import set_a4_page_size, set_academic_margins
+from sections import set_a4_page_size, set_academic_margins, add_section_break
 from headers_footers import add_page_number_to_footer, set_running_header
-from headings import add_academic_heading
-from paragraphs import format_academic_paragraph
+from headings import add_academic_heading, add_chapter_heading
+from paragraphs import format_academic_paragraph, format_preface_paragraph
 from typography import add_formatted_run
 
 doc = docx.Document()
@@ -115,8 +117,14 @@ set_academic_margins(sec, top_cm=3.0, bottom_cm=3.0, left_cm=4.0, right_cm=3.0)
 set_running_header(sec, "Laporan Riset Akademik")
 add_page_number_to_footer(sec, align="center")
 
-# Academic heading and paragraph
-add_academic_heading(doc, "BAB I PENDAHULUAN", level=1)
+# Preliminaries: Kata Pengantar with single line spacing 1.0
+add_academic_heading(doc, "KATA PENGANTAR", level=1)
+p_preface = doc.add_paragraph()
+format_preface_paragraph(p_preface)
+add_formatted_run(p_preface, "Puji syukur kami panjatkan ke hadirat Tuhan Yang Maha Esa atas selesainya laporan riset ini.")
+
+# Chapter 1: separated by Section Break (Next Page) automatically
+add_chapter_heading(doc, "BAB I PENDAHULUAN")
 p = doc.add_paragraph()
 format_academic_paragraph(p)
 add_formatted_run(p, "Chatbot akademik FTMM COMPASS mengimplementasikan arsitektur hybrid RAG-CAG.")

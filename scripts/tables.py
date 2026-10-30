@@ -6,7 +6,7 @@ from pathlib import Path
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.table import Table, _Cell
 
 
@@ -16,6 +16,7 @@ def create_table(
     cols: int,
     col_widths_inches: list[float] | None = None,
     align: str = "center",
+    compact_margins: bool = True,
 ) -> Table:
     table = document.add_table(rows=rows, cols=cols)
     align_map = {
@@ -24,6 +25,9 @@ def create_table(
         "right": WD_TABLE_ALIGNMENT.RIGHT,
     }
     table.alignment = align_map.get(align.lower(), WD_TABLE_ALIGNMENT.CENTER)
+    if compact_margins:
+        set_table_compact_margins(table, top_dxa=0, bottom_dxa=0, left_dxa=0, right_dxa=0)
+
 
     if col_widths_inches and len(col_widths_inches) == cols:
         set_table_col_widths_inches(table, col_widths_inches)
@@ -208,10 +212,15 @@ def format_table_cells(
     header_center: bool = True,
     col0_left: bool = True,
     ensure_no_color: bool = True,
+    compact_margins: bool = True,
+    font_color_black: bool = True,
 ) -> None:
-    """Memformat seluruh sel tabel: font 10 pt, single spasi (line=240), space after=0,
-    serta perataan yang proporsional."""
+    """Memformat seluruh sel tabel: font 10 pt hitam, single spasi (line=240), space after/before=0,
+    margin sel rapat 0 cm, serta perataan yang proporsional."""
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    if compact_margins:
+        set_table_compact_margins(table, top_dxa=0, bottom_dxa=0, left_dxa=0, right_dxa=0)
 
     for row_idx, row in enumerate(table.rows):
         is_header = (row_idx == 0)
@@ -220,11 +229,13 @@ def format_table_cells(
                 remove_cell_shading(cell)
 
             for p in cell.paragraphs:
-                # Spasi baris 1.0 (single) dan space before/after 0 pt
+                # Spasi baris 1.0 (single), space before/after 0 pt, dan indent 0
                 p.paragraph_format.space_before = Pt(0)
                 p.paragraph_format.space_after = Pt(0)
+                p.paragraph_format.first_line_indent = Pt(0)
+                p.paragraph_format.left_indent = Pt(0)
+                p.paragraph_format.right_indent = Pt(0)
                 p.paragraph_format.line_spacing = line_spacing
-
                 # Alignment
                 if is_header and header_center:
                     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -236,5 +247,7 @@ def format_table_cells(
                 for run in p.runs:
                     run.font.name = font_name
                     run.font.size = Pt(font_size_pt)
+                    if font_color_black:
+                        run.font.color.rgb = RGBColor(0, 0, 0)
                     if is_header and header_bold:
                         run.bold = True
