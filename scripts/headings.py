@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import re
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -83,3 +83,35 @@ def add_chapter_heading(
         center_if_level_1=True,
         section_break=True,
     )
+
+def is_caption_paragraph(paragraph: Paragraph) -> bool:
+    """Mengecek apakah paragraf adalah caption (berisi field SEQ atau diawali Gambar/Tabel)."""
+    for fld in paragraph._p.iter(qn("w:fldSimple")):
+        instr = fld.get(qn("w:instr"), "")
+        if "SEQ Gambar" in instr or "SEQ Tabel" in instr:
+            return True
+    text = paragraph.text.strip().lower()
+    return bool(re.match(r"^(gambar|tabel)\s+(\d+|[ivxlcdm]+|[a-z]\b|:|\.)", text))
+
+
+def get_max_body_heading_level(document) -> int:
+    """Mendeteksi level heading tertinggi pada body text (di luar caption)."""
+    max_level = 0
+    for p in document.paragraphs:
+        if is_caption_paragraph(p):
+            continue
+        level = 0
+        pPr = p._p.find(qn("w:pPr"))
+        if pPr is not None:
+            oLvl = pPr.find(qn("w:outlineLvl"))
+            if oLvl is not None and oLvl.get(qn("w:val"), "").isdigit():
+                level = max(level, int(oLvl.get(qn("w:val"))) + 1)
+            pStyle = pPr.find(qn("w:pStyle"))
+            if pStyle is not None:
+                m = re.match(r"^Heading\s*(\d+)$", pStyle.get(qn("w:val"), ""), re.IGNORECASE)
+                level = max(level, int(m.group(1))) if m else level
+        style_name = getattr(getattr(p, "style", None), "name", "")
+        m_style = re.match(r"^Heading\s*(\d+)$", style_name, re.IGNORECASE)
+        level = max(level, int(m_style.group(1))) if m_style else level
+        max_level = max(max_level, level)
+    return max_level

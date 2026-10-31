@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from .captions import add_seq_caption
+from .captions import add_seq_caption, apply_caption_heading, detect_caption_type, resolve_caption_headings
 from .core_xml import NAMESPACES, W_NS, ensure_xml_space, insert_ordered_p_pr, qn
 from .headers_footers import add_page_number_to_footer, add_page_number_with_total, set_running_header
-from .headings import add_academic_heading, add_chapter_heading, set_outline_level
+from .headings import add_academic_heading, add_chapter_heading, get_max_body_heading_level, set_outline_level
 from .lists import add_bullet_item, add_numbered_item, add_numbered_list, add_numbered_paragraph, attach_num_pr, strip_manual_numbering_prefix
 from .equations import add_centered_equation, add_inline_math, add_omml_block, make_omml_fraction
 from .media import add_image_with_caption
@@ -98,6 +98,10 @@ __all__ = [
     "add_list_of_figures",
     "add_list_of_tables",
     "add_seq_caption",
+    "apply_caption_heading",
+    "detect_caption_type",
+    "resolve_caption_headings",
+    "get_max_body_heading_level",
     "add_omml_block",
     "add_inline_math",
     "add_centered_equation",

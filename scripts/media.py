@@ -5,7 +5,12 @@ from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt, RGBColor
 from docx.text.paragraph import Paragraph
-
+try:
+    from .captions import apply_caption_heading
+    from .headings import get_max_body_heading_level
+except ImportError:
+    from captions import apply_caption_heading
+    from headings import get_max_body_heading_level
 
 def add_image_with_caption(
     document,
@@ -14,6 +19,7 @@ def add_image_with_caption(
     width_inches: float = 5.5,
     caption_font_name: str = "Times New Roman",
     caption_size_pt: float = 10.0,
+    heading_level: int | str | None = "auto",
 ) -> tuple[Paragraph, Paragraph]:
     path = Path(image_path)
     if not path.exists():
@@ -33,6 +39,12 @@ def add_image_with_caption(
     p_cap.paragraph_format.space_before = Pt(0)
     p_cap.paragraph_format.space_after = Pt(10)
     p_cap.paragraph_format.keep_with_next = False
+    if heading_level == "auto":
+        max_body = get_max_body_heading_level(document)
+        target_img = max(4, max_body + 1) if max_body >= 4 else 4
+        apply_caption_heading(p_cap, target_img)
+    elif isinstance(heading_level, int):
+        apply_caption_heading(p_cap, heading_level)
 
     clean_cap = re.sub(r"[\r\n]+", " ", caption or "").strip()
     run_cap = p_cap.add_run(clean_cap)
