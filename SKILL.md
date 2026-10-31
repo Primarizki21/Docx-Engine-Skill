@@ -29,6 +29,7 @@ A modular, zero-black-box toolchain for generating and manipulating professional
 | **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list`, `attach_num_pr`, `strip_manual_numbering_prefix` | Adding multi-level bullet points and numbered lists with native Word numPr and markdown runs |
 | **Tables** | `scripts/tables.py` | `create_table`, `apply_academic_table_borders`, `apply_grid_table_borders`, `set_table_col_widths_dxa`, `set_table_compact_margins`, `remove_cell_shading`, `format_table_cells` | Building APA or Full-Grid tables with exact DXA widths, zero shading (no color), compact padding, and single line spacing |
 | **Media** | `scripts/media.py` | `add_image_with_caption` | Centering images, converting dimensions to EMU (1 in = 914400 EMU), anti-orphan `keep_with_next`, and italic captions |
+| **Captions** | `scripts/captions.py` | `add_seq_caption`, `apply_caption_heading`, `detect_caption_type`, `resolve_caption_headings` | Adding SEQ field captions with dynamic heading levels (Gambar H4, Tabel H5, dynamic shifting) |
 | **Headers/Footers** | `scripts/headers_footers.py` | `add_page_number_to_footer`, `add_page_number_with_total`, `set_running_header` | Adding PAGE and NUMPAGES field codes and running header text |
 | **Diff & Inspection** | `scripts/diff_docx.py` | `run_diff_inspection` | Automated semantic and normalized XML diffing of user Word edits against git baseline or another DOCX |
 | **References** | `scripts/references.py` | `add_bookmark`, `add_cross_reference_run`, `add_citation_text` | Bookmarking figures/tables and creating clickable internal hyperlinks |
@@ -113,6 +114,8 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
     Dilarang keras mengetik manual penomoran pada paragraf biasa (`"1. Teks"`). Seluruh butir daftar berurutan wajib memanggil `add_numbered_paragraph()` atau `add_numbered_list()` dari `scripts/lists.py` untuk mengaktifkan native Word `<w:numPr>` dan menjamin *hanging indent* lurus rapi.
 15. **Standar Format Caption: Murni Italic 10 pt Tanpa Bold & Tanpa Narasi Penjelas**:
     Seluruh caption (Gambar, Tabel, Lampiran) wajib satu baris ringkas (<= 45 karakter), murni Italic (`run.italic = True`), 10 pt, dan TANPA BOLD (`run.bold = False`). DILARANG menyisipkan break line (`\n`) atau menambahkan paragraf narasi penjelas di bawah caption.
+16. **Hierarki Heading Caption Dinamis (Gambar = Heading 4, Tabel = Heading 5, Dynamic Shifting)**:
+    Caption Gambar default `Heading 4` (outlineLvl 3) dan caption Tabel default `Heading 5` (outlineLvl 4). Jika dokumen memuat body heading level 4 atau lebih tinggi ($N \ge 4$), level heading caption bergeser secara dinamis ($\text{Gambar} = \max(4, N + 1)$, $\text{Tabel} = \text{Gambar} + 1$). Pemanggilan `add_seq_caption()` otomatis menerapkan heading level dinamis ini, dan `resolve_caption_headings(doc)` menyinkronkan seluruh dokumen.
 ---
 
 ## Standard Recipes

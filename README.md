@@ -199,7 +199,7 @@ Every module under `scripts/` is tightly scoped (< 120 lines) and can be used in
 | **Typography** | `scripts/typography.py` | Character runs, Times New Roman presets, markdown parsing, smart quotes |
 | **Lists** | `scripts/lists.py` | Native Word `w:numPr` numbered lists with hanging indent, prefix stripping |
 | **TOC & Fields** | `scripts/toc.py` | Dynamic Table of Contents, List of Figures (LOF), List of Tables (LOT) |
-| **Captions** | `scripts/captions.py` | Pure italic 10 pt captions without bold, single-line SEQ fields, bookmarks |
+| **Captions** | `scripts/captions.py` | Pure italic 10 pt captions, dynamic headings (Gambar H4, Tabel H5, dynamic shifting), bookmarks |
 | **Equations** | `scripts/equations.py` | Native Office Math (OMML) blocks, fractions, centered formulas |
 | **Headers/Footers**| `scripts/headers_footers.py` | Running headers, `PAGE` and `NUMPAGES` footer fields |
 | **Settings** | `scripts/settings.py` | Injects `w:updateFields` to guarantee dynamic fields update on file open |
