@@ -26,7 +26,7 @@ A modular, zero-black-box toolchain for generating and manipulating professional
 | **Headings** | `scripts/headings.py` | `add_academic_heading`, `add_chapter_heading`, `set_outline_level` | Adding Heading 1 to 4 with proper outline levels, and creating new chapters with section breaks |
 | **Paragraphs** | `scripts/paragraphs.py` | `set_paragraph_spacing`, `set_paragraph_indent`, `set_paragraph_alignment`, `format_academic_paragraph`, `format_preface_paragraph` | Setting 1.5 line spacing for body, single 1.0 spacing for Kata Pengantar, and 1 cm first-line indent |
 | **Typography** | `scripts/typography.py` | `format_run`, `add_formatted_run`, `convert_to_smart_quotes` | Font family (Times New Roman), sizes, bold, italic, and typographic quotes |
-| **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list`, `attach_num_pr`, `strip_manual_numbering_prefix` | Adding multi-level bullet points and numbered lists with native Word numPr and markdown runs |
+| **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list`, `ensure_numbering_scheme`, `parse_list_prefix`, `strip_manual_numbering_prefix` | Multi-format lists (decimal, lowerLetter a., upperLetter A., lowerRoman i., bullet) with native Word numPr, deterministic parsing without regex, and markdown runs |
 | **Tables** | `scripts/tables.py` | `create_table`, `apply_academic_table_borders`, `apply_grid_table_borders`, `set_table_col_widths_dxa`, `set_table_compact_margins`, `remove_cell_shading`, `format_table_cells` | Building APA or Full-Grid tables with exact DXA widths, zero shading (no color), compact padding, and single line spacing |
 | **Media** | `scripts/media.py` | `add_image_with_caption` | Centering images, converting dimensions to EMU (1 in = 914400 EMU), anti-orphan `keep_with_next`, and italic captions |
 | **Captions** | `scripts/captions.py` | `add_seq_caption`, `apply_caption_heading`, `detect_caption_type`, `resolve_caption_headings` | Adding SEQ field captions with dynamic heading levels (Gambar H4, Tabel H5, dynamic shifting) |
@@ -108,10 +108,10 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
     Heading 1 (BAB) dan Heading 2 (Subbab) wajib dicetak TEBAL (`run.bold = True`). Heading 3 (Subsubbab) dan seterusnya DILARANG BOLD (`run.bold = False`, `<w:b w:val="0"/>`), 12 pt Regular, warna teks hitam pekat.
 12. **Nol Spasi Sebelum dan Sesudah Seluruh Paragraf dan Heading (Zero Space Before & After)**:
     Teks, paragraf akademik, preface, serta seluruh tingkatan Heading (Heading 1 / BAB, Heading 2 / Subbab, Heading 3 / Subsubbab, dst.) wajib 0 pt space before dan 0 pt space after (`space_before=Pt(0)`, `space_after=Pt(0)` / 0 cm). Jarak antarbaris dikontrol penuh oleh line spacing (1.5 atau 1.0).
-13. **Exact-Match Template Replacement (Larangan Penggunaan Regex)**:
-    Saat memodifikasi dokumen atau mengisi template, gunakan selalu `replace_exact_text()` atau `replace_placeholders()` dari `scripts/replace.py`. DILARANG menggunakan regex `re.sub` pada berkas .docx karena memecah run formatting dan rentan korupsi XML.
+13. **Prinsip Anti-Regex & Exact-Match Replacement (Larangan Penggunaan Regex Rapuh)**:
+    Saat memodifikasi dokumen, mengisi template, atau parsing prefiks list, dilarang keras menggunakan regex (`re.sub`, `re.match`, dsb.) karena sifatnya rapuh (*fragile*), rentan salah potong (*edge cases*), dan berisiko merusak struktur run XML. Gunakan selalu pencarian eksak via `replace_exact_text()` atau tokenizing deterministik via `parse_list_prefix()`.
 14. **Wajib Menggunakan Native Numbered List (Larangan Penomoran Manual)**:
-    Dilarang keras mengetik manual penomoran pada paragraf biasa (`"1. Teks"`). Seluruh butir daftar berurutan wajib memanggil `add_numbered_paragraph()` atau `add_numbered_list()` dari `scripts/lists.py` untuk mengaktifkan native Word `<w:numPr>` dan menjamin *hanging indent* lurus rapi.
+    Dilarang keras mengetik manual penomoran pada paragraf biasa (`"1. Teks"`, `"a. Teks"`, `"• Teks"`). Seluruh butir daftar berurutan wajib memanggil `add_numbered_paragraph()` atau `add_numbered_list()` dari `scripts/lists.py`. Engine secara otomatis mendeteksi varian format (`decimal` 1., `lowerLetter` a., `upperLetter` A., `lowerRoman` i., `bullet`), mendaftarkan skema ke `word/numbering.xml`, dan menyematkan native Word `<w:numPr>` dengan *hanging indent* lurus rapi.
 15. **Standar Format Caption: Murni Italic 10 pt Tanpa Bold & Tanpa Narasi Penjelas**:
     Seluruh caption (Gambar, Tabel, Lampiran) wajib satu baris ringkas (<= 45 karakter), murni Italic (`run.italic = True`), 10 pt, dan TANPA BOLD (`run.bold = False`). DILARANG menyisipkan break line (`\n`) atau menambahkan paragraf narasi penjelas di bawah caption.
 16. **Hierarki Heading Caption Dinamis (Gambar = Heading 4, Tabel = Heading 5, Dynamic Shifting)**:
@@ -200,16 +200,19 @@ set_table_compact_margins(table, left_dxa=0, right_dxa=0)
 format_table_cells(table, font_size_pt=10.0, line_spacing=1.0, ensure_no_color=True)
 ```
 
-### Recipe 5: Native Word Numbered Paragraphs with Inline Markdown
+### Recipe 5: Native Multi-Format Word Lists (Auto-Detect or Explicit)
 ```python
-from lists import add_numbered_paragraph
+from lists import add_numbered_paragraph, add_numbered_list
 
-# Adds a justified paragraph with ListParagraph style, w:numPr, and parsed italic/bold runs
-add_numbered_paragraph(
+# 1. Auto-detection: awalan 'a.', 'b.', '1.', dsb. otomatis menjadi list asli Word
+add_numbered_paragraph(doc, "a. Tahap **analisis** kebutuhan sistem")
+add_numbered_paragraph(doc, "b. Tahap *perancangan* arsitektur")
+
+# 2. Menambahkan daftar berurutan sekaligus (angka, huruf, romawi)
+add_numbered_list(
     doc,
-    text="Krisis Ketenagakerjaan: Berisiko meninggalkan luka permanen (*scarring effect*) pada kapasitas kerja.",
-    num_id=3,
-    ilvl=0,
+    items=["Tahap evaluasi awal", "Tahap optimasi bobot model"],
+    num_fmt="lowerLetter",  # 'decimal', 'lowerLetter', 'upperLetter', 'lowerRoman', 'bullet'
     line_spacing=1.15,
 )
 ```

@@ -67,9 +67,9 @@ format_academic_paragraph(p_body)
 add_academic_heading(doc, "1.1 Latar Belakang Masalah", level=2)
 add_academic_heading(doc, "1.1.1 Identifikasi Gap Riset", level=3)
 
-# 5. Native Word Numbered List with Hanging Indent
-add_numbered_paragraph(doc, "Tahap 1: Evaluasi latensi awal dan throughput pipeline.", num_id=1, ilvl=0)
-add_numbered_paragraph(doc, "Tahap 2: Optimasi bobot attention dan pemangkasan model.", num_id=1, ilvl=0)
+# 5. Native Word Lists (Multi-Format: Numbers, Letters a., Roman i., Bullet)
+add_numbered_paragraph(doc, "a. Evaluasi latensi awal dan throughput pipeline.")
+add_numbered_paragraph(doc, "b. Optimasi bobot attention dan pemangkasan model.")
 
 # 6. Sequential Caption (Pure Italic, 10 pt, No Bold, Single-Line)
 add_seq_caption(doc, label="Tabel", description="Komparasi Metrik Latensi")
