@@ -33,6 +33,11 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
+try:
+    from .annotations import extract_document_annotations, format_annotations_report
+except ImportError:
+    from annotations import extract_document_annotations, format_annotations_report
+
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 M_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
@@ -302,14 +307,47 @@ def inspect_sections_diff(root_base: ET.Element, root_mod: ET.Element) -> list[s
                     results.append(f"    • Margin {k_short}: {v_in} inci ({v} dxa)")
     return results
 
+def inspect_annotations_diff(base_docx: str | Path, mod_docx: str | Path) -> list[str]:
+    """Mendeteksi penambahan atau keberadaan highlight, komentar Word, dan track changes."""
+    is_standalone = str(base_docx) == str(mod_docx)
+    base_anns = [] if is_standalone else extract_document_annotations(base_docx)
+    mod_anns = extract_document_annotations(mod_docx)
+    if not mod_anns:
+        return []
+
+    if is_standalone:
+        return format_annotations_report(mod_anns)
+
+    base_keys = {(a["kind"], a["text"], a["location"]) for a in base_anns}
+    new_anns = [a for a in mod_anns if (a["kind"], a["text"], a["location"]) not in base_keys]
+
+    if not new_anns:
+        return [f"Tidak ada anotasi/highlight baru ({len(mod_anns)} anotasi eksisting sama dengan baseline)."]
+
+    lines = [f"Terdeteksi {len(new_anns)} sorotan reviu BARU dari pengguna:"]
+    for a in new_anns:
+        tag = a["color"].upper() if a["kind"] in ("highlight", "color") else a["kind"].upper()
+        author_str = f" oleh {a['author']}" if a["author"] and a["author"] != "User" else ""
+        lines.append(f"  • [BARU] [{tag}]{author_str} di {a['location']}:")
+        lines.append(f"    Teks: \"{a['text']}\"")
+        if a["context"] and a["context"] != a["text"]:
+            ctx = a["context"][:100] + "..." if len(a["context"]) > 100 else a["context"]
+            lines.append(f"    Konteks: \"{ctx}\"")
+    return lines
+
+
 
 def generate_python_recommendations(report_items: dict[str, list[str]]) -> list[str]:
     """Menghasilkan cuplikan kode Python generator berdasarkan perubahan yang terdeteksi."""
     code_lines = []
     code_lines.append("# Rekomendasi penyesuaian kode generator Python:")
 
+    has_ann = bool(report_items.get("annotations", []))
     has_table = any("Tabel" in k for k in report_items.get("tables", []))
     has_num = bool(report_items.get("numbering", []))
+
+    if has_ann:
+        code_lines.append("# 1. Periksa teks ber-highlight atau komentar pengguna di atas dan perbarui teks di generator.")
 
     imports = []
     if has_table:
@@ -321,13 +359,13 @@ def generate_python_recommendations(report_items: dict[str, list[str]]) -> list[
         code_lines.append(f"from engine import {', '.join(imports)}\n")
 
     if has_table:
-        code_lines.append("# 1. Perbarui styling tabel ke Full Grid & No Color:")
+        code_lines.append("# 2. Perbarui styling tabel ke Full Grid & No Color:")
         code_lines.append("apply_grid_table_borders(table, sz=4)")
         code_lines.append("set_table_col_widths_dxa(table, [1746, 2360, 1418, 1275, 1418])")
         code_lines.append("format_table_cells(table, font_size_pt=10.0, line_spacing=1.0, ensure_no_color=True)\n")
 
     if has_num:
-        code_lines.append("# 2. Ganti penomoran manual paragraf dengan native numbering Word:")
+        code_lines.append("# 3. Ganti penomoran manual paragraf dengan native numbering Word:")
         code_lines.append("add_numbered_paragraph(doc, text, num_id=3, ilvl=0)")
 
     return code_lines
@@ -369,10 +407,24 @@ def run_diff_inspection(
         mod_docx = Path(file1)
     else:
         if file2 is None:
-            return "Error: Harap sertakan berkas kedua atau gunakan flag --git."
+            target_docx = Path(file1)
+            if not target_docx.exists():
+                return f"Error: Berkas tidak ditemukan: {target_docx}"
+            anns = extract_document_annotations(target_docx)
+            output = [
+                "=" * 80,
+                "               DOCX-ENGINE: DOCUMENT INSPECTION REPORT                ",
+                "=" * 80,
+                f"Target Dokumen   : {target_docx}",
+                "-" * 80,
+                "\n[USER ANNOTATIONS & REVIEWS]",
+            ]
+            for line in format_annotations_report(anns):
+                output.append(f"  {line}")
+            output.append("\n" + "=" * 80)
+            return "\n".join(output)
         base_docx = Path(file1)
         mod_docx = Path(file2)
-
     try:
         if mode == "xml":
             return generate_clean_xml_diff(base_docx, mod_docx)
@@ -385,13 +437,13 @@ def run_diff_inspection(
             return "Error: Gagal mem-parse word/document.xml dari salah satu berkas."
 
         report = {}
+        report["annotations"] = inspect_annotations_diff(base_docx, mod_docx)
         report["tables"] = inspect_tables_diff(root_base, root_mod)
         report["numbering"] = inspect_numbering_diff(root_base, root_mod)
         report["paragraphs"] = inspect_paragraphs_styling_diff(root_base, root_mod)
         report["images"] = inspect_images_diff(root_base, root_mod)
         report["math"] = inspect_math_diff(root_base, root_mod)
         report["sections"] = inspect_sections_diff(root_base, root_mod)
-
         output = []
         output.append("=" * 80)
         output.append("               DOCX-ENGINE: USER EDIT INSPECTION REPORT               ")
@@ -428,11 +480,16 @@ def run_diff_inspection(
 def main():
     parser = argparse.ArgumentParser(description="DOCX Diff & Semantic Inspection Tool")
     parser.add_argument("file1", help="Berkas docx utama yang dimodifikasi")
-    parser.add_argument("file2", nargs="?", default=None, help="Berkas docx pembanding (opsional jika --git aktif)")
+    parser.add_argument("file2", nargs="?", default=None, help="Berkas docx pembanding (opsional jika --git atau inspeksi tunggal)")
     parser.add_argument("--git", action="store_true", help="Bandingkan dengan versi git HEAD")
+    parser.add_argument("--annotations", action="store_true", help="Cek khusus sorotan highlight, komentar, dan revisi reviu pengguna")
     parser.add_argument("--mode", choices=["summary", "xml"], default="summary", help="Mode laporan diff")
 
     args = parser.parse_args()
+    if args.annotations and not args.git and args.file2 is None:
+        anns = extract_document_annotations(args.file1)
+        print("\n".join(format_annotations_report(anns)))
+        return
     report = run_diff_inspection(args.file1, args.file2, use_git=args.git, mode=args.mode)
     print(report)
 

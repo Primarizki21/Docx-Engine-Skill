@@ -24,6 +24,7 @@ MODULE_FILES = [
     "equations.py",
     "diff_docx.py",
     "replace.py",
+    "annotations.py",
 ]
 
 

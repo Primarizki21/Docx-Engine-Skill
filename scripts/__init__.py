@@ -51,6 +51,7 @@ from .tables import (
 from .toc import add_list_of_figures, add_list_of_tables, add_table_of_contents
 from .typography import add_formatted_run, add_markdown_runs, convert_to_smart_quotes, format_run
 from .diff_docx import run_diff_inspection
+from .annotations import extract_document_annotations, format_annotations_report
 
 __all__ = [
     "add_academic_heading",
@@ -124,4 +125,6 @@ __all__ = [
     "qn",
     "NAMESPACES",
     "W_NS",
+    "extract_document_annotations",
+    "format_annotations_report",
 ]
