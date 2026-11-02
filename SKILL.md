@@ -28,10 +28,11 @@ A modular, zero-black-box toolchain for generating and manipulating professional
 | **Typography** | `scripts/typography.py` | `format_run`, `add_formatted_run`, `convert_to_smart_quotes` | Font family (Times New Roman), sizes, bold, italic, and typographic quotes |
 | **Lists** | `scripts/lists.py` | `add_bullet_item`, `add_numbered_item`, `add_numbered_paragraph`, `add_numbered_list`, `ensure_numbering_scheme`, `parse_list_prefix`, `strip_manual_numbering_prefix` | Multi-format lists (decimal, lowerLetter a., upperLetter A., lowerRoman i., bullet) with native Word numPr, deterministic parsing without regex, and markdown runs |
 | **Tables** | `scripts/tables.py` | `create_table`, `apply_academic_table_borders`, `apply_grid_table_borders`, `set_table_col_widths_dxa`, `set_table_compact_margins`, `remove_cell_shading`, `format_table_cells` | Building APA or Full-Grid tables with exact DXA widths, zero shading (no color), compact padding, and single line spacing |
-| **Media** | `scripts/media.py` | `add_image_with_caption` | Centering images, converting dimensions to EMU (1 in = 914400 EMU), anti-orphan `keep_with_next`, and italic captions |
-| **Captions** | `scripts/captions.py` | `add_seq_caption`, `apply_caption_heading`, `detect_caption_type`, `resolve_caption_headings` | Adding SEQ field captions with dynamic heading levels (Gambar H4, Tabel H5, dynamic shifting) |
+| **Media** | `scripts/media.py` | `add_image_with_caption` | Centering images, converting dimensions to EMU (1 in = 914400 EMU), anti-orphan `keep_with_next`, and centered 10 pt captions |
+| **Captions** | `scripts/captions.py` | `add_seq_caption`, `apply_caption_heading`, `detect_caption_type`, `resolve_caption_headings` | Adding SEQ field captions (non-italic 10 pt, Gambar center, Tabel left, Gambar H4, Tabel H5, dynamic shifting) |
 | **Headers/Footers** | `scripts/headers_footers.py` | `add_page_number_to_footer`, `add_page_number_with_total`, `set_running_header` | Adding PAGE and NUMPAGES field codes and running header text |
-| **Diff & Inspection** | `scripts/diff_docx.py` | `run_diff_inspection` | Automated semantic and normalized XML diffing of user Word edits against git baseline or another DOCX |
+| **Diff & Inspection** | `scripts/diff_docx.py` | `run_diff_inspection`, `inspect_annotations_diff` | Automated semantic, user annotations (highlight, comments, track changes), and normalized XML diffing against git baseline or standalone DOCX |
+| **Annotations** | `scripts/annotations.py` | `extract_document_annotations`, `format_annotations_report` | Extracting highlighted text, custom font colors, Word comments, and track changes (ins/del) with breadcrumb context |
 | **References** | `scripts/references.py` | `add_bookmark`, `add_cross_reference_run`, `add_citation_text` | Bookmarking figures/tables and creating clickable internal hyperlinks |
 | **Table of Contents** | `scripts/toc.py` | `add_table_of_contents`, `add_list_of_figures`, `add_list_of_tables` | Generating dynamic field codes for TOC, LOT, and LOF |
 | **Equations (Math)** | `scripts/equations.py` | `add_omml_block`, `add_inline_math`, `add_centered_equation`, `make_omml_fraction` | Generating Office Math (OMML) equations for formulas and metrics |
@@ -112,8 +113,8 @@ uv run python ~/.omp/agent/skills/docx-engine/scripts/diff_docx.py ./laporan_bas
     Saat memodifikasi dokumen, mengisi template, atau parsing prefiks list, dilarang keras menggunakan regex (`re.sub`, `re.match`, dsb.) karena sifatnya rapuh (*fragile*), rentan salah potong (*edge cases*), dan berisiko merusak struktur run XML. Gunakan selalu pencarian eksak via `replace_exact_text()` atau tokenizing deterministik via `parse_list_prefix()`.
 14. **Wajib Menggunakan Native Numbered List (Larangan Penomoran Manual)**:
     Dilarang keras mengetik manual penomoran pada paragraf biasa (`"1. Teks"`, `"a. Teks"`, `"• Teks"`). Seluruh butir daftar berurutan wajib memanggil `add_numbered_paragraph()` atau `add_numbered_list()` dari `scripts/lists.py`. Engine secara otomatis mendeteksi varian format (`decimal` 1., `lowerLetter` a., `upperLetter` A., `lowerRoman` i., `bullet`), mendaftarkan skema ke `word/numbering.xml`, dan menyematkan native Word `<w:numPr>` dengan *hanging indent* lurus rapi.
-15. **Standar Format Caption: Murni Italic 10 pt Tanpa Bold & Tanpa Narasi Penjelas**:
-    Seluruh caption (Gambar, Tabel, Lampiran) wajib satu baris ringkas (<= 45 karakter), murni Italic (`run.italic = True`), 10 pt, dan TANPA BOLD (`run.bold = False`). DILARANG menyisipkan break line (`\n`) atau menambahkan paragraf narasi penjelas di bawah caption.
+15. **Standar Format Caption: Normal (Tidak Italic) 10 pt Times New Roman, Tanpa Bold, Perataan Kontekstual (Gambar Center, Tabel Left)**:
+    Seluruh caption (Gambar, Tabel, Lampiran) wajib satu baris ringkas (<= 45 karakter), format Normal / TIDAK ITALIC (`run.italic = False`), font Times New Roman, 10 pt, dan TANPA BOLD (`run.bold = False`). Perataan teks: Rata Tengah (`center`) untuk Gambar, Rata Kiri (`left`) untuk Tabel. DILARANG menyisipkan break line (`\n`) atau menambahkan paragraf narasi penjelas di bawah caption.
 16. **Hierarki Heading Caption Dinamis (Gambar = Heading 4, Tabel = Heading 5, Dynamic Shifting)**:
     Caption Gambar default `Heading 4` (outlineLvl 3) dan caption Tabel default `Heading 5` (outlineLvl 4). Jika dokumen memuat body heading level 4 atau lebih tinggi ($N \ge 4$), level heading caption bergeser secara dinamis ($\text{Gambar} = \max(4, N + 1)$, $\text{Tabel} = \text{Gambar} + 1$). Pemanggilan `add_seq_caption()` otomatis menerapkan heading level dinamis ini, dan `resolve_caption_headings(doc)` menyinkronkan seluruh dokumen.
 ---
@@ -175,7 +176,7 @@ set_cell_shading(table.rows[0].cells[1], "F0F0F0")
 ```python
 from captions import add_seq_caption
 from references import add_cross_reference_run
-# Add caption with dynamic SEQ field and bookmark (pure italic, 10 pt, no bold, single-line)
+# Add caption with dynamic SEQ field and bookmark (10 pt Times New Roman, non-italic, no bold, left-aligned for table)
 add_seq_caption(doc, label="Tabel", description="Komparasi Metrik Latensi", bookmark_name="tbl_latensi")
 
 # Refer to it in body text

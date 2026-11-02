@@ -51,6 +51,6 @@ def add_image_with_caption(
     run_cap.font.name = caption_font_name
     run_cap.font.size = Pt(caption_size_pt)
     run_cap.bold = False
-    run_cap.italic = True
+    run_cap.italic = False
     run_cap.font.color.rgb = RGBColor(0, 0, 0)
     return p_img, p_cap
