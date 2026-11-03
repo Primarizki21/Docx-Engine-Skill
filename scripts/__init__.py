@@ -44,9 +44,11 @@ from .tables import (
     remove_cell_shading,
     set_cell_margins,
     set_cell_shading,
+    set_cell_vertical_alignment,
     set_table_col_widths_dxa,
     set_table_col_widths_inches,
     set_table_compact_margins,
+    set_table_vertical_alignment,
 )
 from .toc import add_list_of_figures, add_list_of_tables, add_table_of_contents
 from .typography import add_formatted_run, add_markdown_runs, convert_to_smart_quotes, format_run
@@ -98,6 +100,8 @@ __all__ = [
     "set_table_col_widths_dxa",
     "set_table_compact_margins",
     "remove_cell_shading",
+    "set_cell_vertical_alignment",
+    "set_table_vertical_alignment",
     "format_table_cells",
     "format_run",
     "add_formatted_run",

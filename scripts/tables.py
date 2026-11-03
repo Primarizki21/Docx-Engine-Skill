@@ -18,6 +18,7 @@ def create_table(
     align: str = "center",
     compact_margins: bool = True,
     border_style: str = "grid",
+    vertical_center: bool = True,
 ) -> Table:
     table = document.add_table(rows=rows, cols=cols)
     align_map = {
@@ -29,7 +30,6 @@ def create_table(
     if compact_margins:
         set_table_compact_margins(table, top_dxa=0, bottom_dxa=0, left_dxa=0, right_dxa=0)
 
-
     if border_style == "grid":
         apply_grid_table_borders(table, sz=4)
     elif border_style == "academic":
@@ -37,6 +37,9 @@ def create_table(
 
     if col_widths_inches and len(col_widths_inches) == cols:
         set_table_col_widths_inches(table, col_widths_inches)
+
+    if vertical_center:
+        set_table_vertical_alignment(table, align="center")
     return table
 
 
@@ -211,6 +214,22 @@ def remove_cell_shading(cell: _Cell) -> None:
     if existing_shd is not None:
         tcPr.remove(existing_shd)
 
+def set_cell_vertical_alignment(cell: _Cell, align: str = "center") -> None:
+    """Mengatur perataan vertikal pada sel tabel (top, center, bottom)."""
+    align_map = {
+        "top": WD_ALIGN_VERTICAL.TOP,
+        "center": WD_ALIGN_VERTICAL.CENTER,
+        "bottom": WD_ALIGN_VERTICAL.BOTTOM,
+    }
+    cell.vertical_alignment = align_map.get(align.lower(), WD_ALIGN_VERTICAL.CENTER)
+
+
+def set_table_vertical_alignment(table: Table, align: str = "center") -> None:
+    """Mengatur perataan vertikal pada seluruh sel tabel."""
+    for row in table.rows:
+        for cell in row.cells:
+            set_cell_vertical_alignment(cell, align=align)
+
 
 def format_table_cells(
     table: Table,
@@ -219,19 +238,19 @@ def format_table_cells(
     line_spacing: float = 1.0,
     header_bold: bool = True,
     header_center: bool = True,
-    col0_left: bool = True,
+    col0_left: bool = False,
+    vertical_center: bool = True,
     ensure_no_color: bool = True,
     compact_margins: bool = True,
     font_color_black: bool = True,
     ensure_grid_borders: bool = True,
 ) -> None:
     """Memformat seluruh sel tabel: font 10 pt hitam, single spasi (line=240), space after/before=0,
-    margin sel rapat 0 cm, serta perataan yang proporsional."""
+    margin sel rapat 0 cm, serta perataan horizontal dan vertikal center secara default."""
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     if compact_margins:
         set_table_compact_margins(table, top_dxa=0, bottom_dxa=0, left_dxa=0, right_dxa=0)
-
 
     if ensure_grid_borders and table._tbl.tblPr.find(qn("w:tblBorders")) is None:
         apply_grid_table_borders(table, sz=4)
@@ -240,6 +259,9 @@ def format_table_cells(
         for col_idx, cell in enumerate(row.cells):
             if ensure_no_color:
                 remove_cell_shading(cell)
+
+            if vertical_center:
+                set_cell_vertical_alignment(cell, align="center")
 
             for p in cell.paragraphs:
                 # Spasi baris 1.0 (single), space before/after 0 pt, dan indent 0
@@ -264,3 +286,4 @@ def format_table_cells(
                         run.font.color.rgb = RGBColor(0, 0, 0)
                     if is_header and header_bold:
                         run.bold = True
+
