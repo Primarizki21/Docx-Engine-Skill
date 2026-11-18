@@ -21,9 +21,9 @@ def set_letter_page_size(section: Section) -> Section:
 
 def set_academic_margins(
     section: Section,
-    top_cm: float = 3.0,
-    bottom_cm: float = 3.0,
-    left_cm: float = 4.0,
+    top_cm: float = 4.0,
+    bottom_cm: float = 4.0,
+    left_cm: float = 3.0,
     right_cm: float = 3.0,
 ) -> Section:
     section.top_margin = Inches(top_cm / 2.54)

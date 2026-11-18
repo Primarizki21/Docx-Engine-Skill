@@ -44,7 +44,7 @@ def set_paragraph_alignment(p: Paragraph, align: str = "left") -> Paragraph:
 
 def format_academic_paragraph(
     p: Paragraph,
-    first_line_indent_cm: float = 1.0,
+    first_line_indent_cm: float = 1.27,
     line_spacing: float = 1.5,
 ) -> Paragraph:
     fmt = p.paragraph_format

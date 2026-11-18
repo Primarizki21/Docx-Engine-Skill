@@ -1,5 +1,4 @@
 from __future__ import annotations
-import re
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -85,33 +84,85 @@ def add_chapter_heading(
     )
 
 def is_caption_paragraph(paragraph: Paragraph) -> bool:
-    """Mengecek apakah paragraf adalah caption (berisi field SEQ atau diawali Gambar/Tabel)."""
+    """Mengecek apakah paragraf adalah caption (diawali Gambar/Tabel + nomor)."""
     for fld in paragraph._p.iter(qn("w:fldSimple")):
         instr = fld.get(qn("w:instr"), "")
         if "SEQ Gambar" in instr or "SEQ Tabel" in instr:
             return True
     text = paragraph.text.strip().lower()
-    return bool(re.match(r"^(gambar|tabel)\s+(\d+|[ivxlcdm]+|[a-z]\b|:|\.)", text))
+    if not (text.startswith("gambar") or text.startswith("tabel")):
+        return False
+    marker = text.partition(" ")[2].strip().partition(" ")[0]
+    return marker[:1].isdigit() or marker.startswith(":") or marker.startswith(".")
+
+
+def _style_heading_level(name: str) -> int:
+    """Nomor level dari nama style 'Heading N' tanpa regex."""
+    lowered = name.strip().lower()
+    if not lowered.startswith("heading"):
+        return 0
+    suffix = lowered.partition("heading")[2].strip()
+    return int(suffix) if suffix.isdigit() else 0
+
+
+def _heading_level(paragraph: Paragraph) -> int:
+    """Level heading 1-based dari outlineLvl/style; 0 jika bukan heading."""
+    level = 0
+    pPr = paragraph._p.find(qn("w:pPr"))
+    if pPr is not None:
+        oLvl = pPr.find(qn("w:outlineLvl"))
+        if oLvl is not None and oLvl.get(qn("w:val"), "").isdigit():
+            level = max(level, int(oLvl.get(qn("w:val"))) + 1)
+        pStyle = pPr.find(qn("w:pStyle"))
+        if pStyle is not None:
+            level = max(level, _style_heading_level(pStyle.get(qn("w:val"), "")))
+    style_name = getattr(getattr(paragraph, "style", None), "name", "")
+    return max(level, _style_heading_level(style_name))
 
 
 def get_max_body_heading_level(document) -> int:
     """Mendeteksi level heading tertinggi pada body text (di luar caption)."""
-    max_level = 0
+    return max(
+        (_heading_level(p) for p in document.paragraphs
+         if not is_caption_paragraph(p)),
+        default=0,
+    )
+
+
+def _numeric_prefix(text: str) -> list[int]:
+    """Komponen angka dari prefix seperti '1.2.3 Judul'."""
+    token = text.strip().partition(" ")[0].rstrip(".")
+    parts = token.split(".")
+    return [int(p) for p in parts] if token and all(p.isdigit() for p in parts) else []
+
+
+def _collect_heading_counters(document) -> list[int]:
+    """Nomor berurutan dari prefix numerik heading yang ada."""
+    counters: list[int] = []
     for p in document.paragraphs:
-        if is_caption_paragraph(p):
+        if is_caption_paragraph(p) or _heading_level(p) < 1:
             continue
-        level = 0
-        pPr = p._p.find(qn("w:pPr"))
-        if pPr is not None:
-            oLvl = pPr.find(qn("w:outlineLvl"))
-            if oLvl is not None and oLvl.get(qn("w:val"), "").isdigit():
-                level = max(level, int(oLvl.get(qn("w:val"))) + 1)
-            pStyle = pPr.find(qn("w:pStyle"))
-            if pStyle is not None:
-                m = re.match(r"^Heading\s*(\d+)$", pStyle.get(qn("w:val"), ""), re.IGNORECASE)
-                level = max(level, int(m.group(1))) if m else level
-        style_name = getattr(getattr(p, "style", None), "name", "")
-        m_style = re.match(r"^Heading\s*(\d+)$", style_name, re.IGNORECASE)
-        level = max(level, int(m_style.group(1))) if m_style else level
-        max_level = max(max_level, level)
-    return max_level
+        prefix = _numeric_prefix(p.text)
+        if not prefix:
+            continue
+        depth = len(prefix)
+        while len(counters) < depth:
+            counters.append(0)
+        for i in range(depth):
+            counters[i] = prefix[i]
+        for i in range(depth, len(counters)):
+            counters[i] = 0
+    return counters
+
+
+def add_numbered_academic_heading(document, title: str, level: int = 2) -> Paragraph:
+    """Heading bernomor X.Y.Z; deeper counter reset saat level atas bertambah."""
+    depth = max(1, int(level))
+    counters = _collect_heading_counters(document)[:depth]
+    while len(counters) < depth:
+        counters.append(0)
+    if counters[0] == 0:
+        counters[0] = 1
+    counters[-1] += 1
+    number = ".".join(str(value) for value in counters)
+    return add_academic_heading(document, f"{number} {title}", level=level)

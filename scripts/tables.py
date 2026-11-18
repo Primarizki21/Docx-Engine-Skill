@@ -18,7 +18,7 @@ def create_table(
     align: str = "center",
     compact_margins: bool = True,
     border_style: str = "grid",
-    vertical_center: bool = True,
+    vertical_center: bool = False,
 ) -> Table:
     table = document.add_table(rows=rows, cols=cols)
     align_map = {
@@ -40,6 +40,11 @@ def create_table(
 
     if vertical_center:
         set_table_vertical_alignment(table, align="center")
+    else:
+        set_table_vertical_alignment(table, align="top")
+        if table.rows:
+            for cell in table.rows[0].cells:
+                set_cell_vertical_alignment(cell, align="center")
     return table
 
 
@@ -214,14 +219,14 @@ def remove_cell_shading(cell: _Cell) -> None:
     if existing_shd is not None:
         tcPr.remove(existing_shd)
 
-def set_cell_vertical_alignment(cell: _Cell, align: str = "center") -> None:
+def set_cell_vertical_alignment(cell: _Cell, align: str = "top") -> None:
     """Mengatur perataan vertikal pada sel tabel (top, center, bottom)."""
     align_map = {
         "top": WD_ALIGN_VERTICAL.TOP,
         "center": WD_ALIGN_VERTICAL.CENTER,
         "bottom": WD_ALIGN_VERTICAL.BOTTOM,
     }
-    cell.vertical_alignment = align_map.get(align.lower(), WD_ALIGN_VERTICAL.CENTER)
+    cell.vertical_alignment = align_map.get(align.lower(), WD_ALIGN_VERTICAL.TOP)
 
 
 def set_table_vertical_alignment(table: Table, align: str = "center") -> None:
@@ -239,14 +244,15 @@ def format_table_cells(
     header_bold: bool = True,
     header_center: bool = True,
     col0_left: bool = False,
-    vertical_center: bool = True,
+    vertical_center: bool = False,
     ensure_no_color: bool = True,
     compact_margins: bool = True,
     font_color_black: bool = True,
     ensure_grid_borders: bool = True,
 ) -> None:
     """Memformat seluruh sel tabel: font 10 pt hitam, single spasi (line=240), space after/before=0,
-    margin sel rapat 0 cm, serta perataan horizontal dan vertikal center secara default."""
+    margin sel rapat 0 cm, perataan horizontal center dan vertikal top pada sel isi (center pada header)
+    secara default; gunakan vertical_center=True untuk memaksa semua sel center."""
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     if compact_margins:
@@ -260,8 +266,10 @@ def format_table_cells(
             if ensure_no_color:
                 remove_cell_shading(cell)
 
-            if vertical_center:
+            if vertical_center or is_header:
                 set_cell_vertical_alignment(cell, align="center")
+            else:
+                set_cell_vertical_alignment(cell, align="top")
 
             for p in cell.paragraphs:
                 # Spasi baris 1.0 (single), space before/after 0 pt, dan indent 0
