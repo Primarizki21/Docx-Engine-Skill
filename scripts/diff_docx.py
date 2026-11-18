@@ -38,6 +38,11 @@ try:
 except ImportError:
     from annotations import extract_document_annotations, format_annotations_report
 
+try:
+    from .textconv import canonical_diff, canonical_lines
+except ImportError:
+    from textconv import canonical_diff, canonical_lines
+
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 M_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
@@ -459,6 +464,12 @@ def run_diff_inspection(
                 output.append(f"\n[{category.upper()}]")
                 for item in items:
                     output.append(f"  {item}")
+
+        canonical_changes = canonical_diff(canonical_lines(base_docx), canonical_lines(mod_docx))
+        if canonical_changes:
+            changes_found = True
+            output.append("\n[CANONICAL TEXT DIFF]")
+            output.extend(f"  {line}" for line in canonical_changes)
 
         if not changes_found:
             output.append("\nTidak ada perbedaan semantik terdeteksi (dokumen identik).")

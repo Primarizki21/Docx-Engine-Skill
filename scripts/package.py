@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 import zipfile
+from io import BytesIO
 from pathlib import Path
 from lxml import etree
 try:
     from .core_xml import ensure_xml_space
 except ImportError:
     from core_xml import ensure_xml_space
+
+
+class _ZeroAttrZipInfo(zipfile.ZipInfo):
+    external_attr = property(lambda self: 0, lambda self, value: None)
 
 
 def unpack_docx(docx_path: str | Path, output_dir: str | Path) -> Path:
@@ -33,12 +37,24 @@ def pack_docx(source_dir: str | Path, output_docx: str | Path, auto_repair: bool
             ensure_xml_space(tree.getroot())
             doc_xml.write_bytes(etree.tostring(tree, encoding="utf-8", xml_declaration=True, standalone="yes"))
 
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
-        for root, _, files in os.walk(src):
-            for file in files:
-                full_path = Path(root) / file
-                arcname = full_path.relative_to(src)
-                z.write(full_path, arcname)
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        entries = sorted(
+            (p for p in src.rglob("*") if p.is_file()),
+            key=lambda p: p.relative_to(src).as_posix(),
+        )
+        for full_path in entries:
+            info = _ZeroAttrZipInfo(
+                full_path.relative_to(src).as_posix(),
+                date_time=(1980, 1, 1, 0, 0, 0),
+            )
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0
+            info.create_system = 0
+            z.writestr(info, full_path.read_bytes())
+    data = buffer.getvalue()
+    if not target.exists() or target.read_bytes() != data:
+        target.write_bytes(data)
     return target
 
 
