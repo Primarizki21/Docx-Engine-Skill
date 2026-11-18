@@ -17,6 +17,11 @@ dev = [
 docx-engine-scaffold = "scripts.scaffold:main"
 docx-engine-package = "scripts.package:main"
 docx-engine-diff = "scripts.diff_docx:main"
+docx-engine-verify = "scripts.verify:main"
+docx-engine-canon = "scripts.textconv:main"
+docx-engine-regression = "scripts.regression_diff:main"
+docx-engine-drift = "scripts.manual_drift:main"
+docx-engine-mutation-guard = "scripts.mutation_guard:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["scripts*"]

@@ -25,6 +25,16 @@ MODULE_FILES = [
     "diff_docx.py",
     "replace.py",
     "annotations.py",
+    "textconv.py",
+    "mutation_guard.py",
+    "lexicon.py",
+    "acronyms.py",
+    "sentence_metrics.py",
+    "citation_qa.py",
+    "reference_qa.py",
+    "verify.py",
+    "regression_diff.py",
+    "manual_drift.py",
 ]
 
 
@@ -47,6 +57,17 @@ def scaffold_engine(target_dir: str | Path, overwrite: bool = False) -> Path:
 
         shutil.copy2(src_file, dest_file)
         copied += 1
+    data_src = src_dir.parent / "data"
+    data_dest = dest.parent / "data"
+    if data_src.exists():
+        data_dest.mkdir(parents=True, exist_ok=True)
+        for src_file in sorted(data_src.glob("*.json")):
+            dest_file = data_dest / src_file.name
+            if dest_file.exists() and not overwrite:
+                print(f"Skipping existing: {dest_file.name}")
+                continue
+            shutil.copy2(src_file, dest_file)
+            copied += 1
 
     print(f"Successfully scaffolded {copied} docx-engine modules to: {dest}")
     print("\nNext steps in your target project:")

@@ -16,17 +16,14 @@ _PARSER = etree.XMLParser(resolve_entities=False)
 
 
 def _para_text(p: etree._Element) -> str:
-    """Gabungkan seluruh w:t dalam satu paragraf (stabil terhadap perpecahan run)."""
     return "".join(t.text or "" for t in p.iter(qn("w:t")))
 
 
 def _cell_text(tc: etree._Element) -> str:
-    """Gabungkan paragraf di dalam satu sel tabel."""
     return "".join(_para_text(p) for p in tc.iter(qn("w:p")))
 
 
 def _level(p: etree._Element) -> int | None:
-    """Level 1-9 dari outlineLvl (0-8) atau gaya Heading N."""
     p_pr = p.find(qn("w:pPr"))
     if p_pr is None:
         return None
@@ -60,7 +57,6 @@ def _has_sect_pr(p: etree._Element) -> bool:
 
 
 def canonical_lines(docx_path) -> list[str]:
-    """Hasilkan baris `JENIS|teks` dari word/document.xml secara deterministik."""
     with zipfile.ZipFile(docx_path) as archive:
         root = etree.fromstring(archive.read("word/document.xml"), _PARSER)
     body = root.find(qn("w:body"))
@@ -92,12 +88,32 @@ def _as_lines(value) -> list[str]:
 
 
 def canonical_diff(a, b) -> list[str]:
-    """Diff unified dari dua daftar baris kanonik (atau dua path docx)."""
     return list(difflib.unified_diff(_as_lines(a), _as_lines(b), fromfile="a", tofile="b", lineterm=""))
 
 def write_canonical(docx_path, out) -> Path:
-    """Tulis baris kanonik ke berkas teks dan kembalikan Path tujuannya."""
     lines = canonical_lines(docx_path)
     target = Path(out)
     target.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
     return target
+
+
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Print canonical DOCX text lines.")
+    parser.add_argument("docx", help="DOCX path")
+    parser.add_argument("--out", help="Write canonical lines to a text file")
+    parser.add_argument("--diff", help="Compare with another DOCX path")
+    args = parser.parse_args()
+    if args.diff:
+        for line in canonical_diff(args.docx, args.diff):
+            print(line)
+    elif args.out:
+        print(write_canonical(args.docx, args.out))
+    else:
+        for line in canonical_lines(args.docx):
+            print(line)
+
+
+if __name__ == "__main__":
+    main()

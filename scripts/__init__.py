@@ -3,7 +3,13 @@ from __future__ import annotations
 from .captions import add_seq_caption, apply_caption_heading, detect_caption_type
 from .core_xml import NAMESPACES, W_NS, ensure_xml_space, insert_ordered_p_pr, qn
 from .headers_footers import add_page_number_to_footer, add_page_number_with_total, set_running_header
-from .headings import add_academic_heading, add_chapter_heading, get_max_body_heading_level, set_outline_level
+from .headings import (
+    add_academic_heading,
+    add_chapter_heading,
+    add_numbered_academic_heading,
+    get_max_body_heading_level,
+    set_outline_level,
+)
 from .lists import (
     add_bullet_item,
     add_numbered_item,
@@ -50,13 +56,28 @@ from .tables import (
     set_table_compact_margins,
     set_table_vertical_alignment,
 )
-from .toc import add_list_of_figures, add_list_of_tables, add_table_of_contents
+from .toc import (
+    add_list_of_figures,
+    add_list_of_tables,
+    add_table_of_contents,
+    build_static_lists,
+    collect_caption_entries,
+    collect_toc_entries,
+    render_page_numbers,
+)
 from .typography import add_formatted_run, add_markdown_runs, convert_to_smart_quotes, format_run
 from .diff_docx import run_diff_inspection
 from .annotations import extract_document_annotations, format_annotations_report
 from .lexicon import acronym_map, forbidden_map, italic_segments, load_lexicon
 from .textconv import canonical_diff, canonical_lines, write_canonical
 from .mutation_guard import scan_source
+from .acronyms import assert_no_dropped_expansions, expansion_required, find_dropped_expansions
+from .sentence_metrics import audit as audit_sentences, content_word_count, paragraph_metrics, split_sentences
+from .citation_qa import audit_claim_citations
+from .reference_qa import audit_references
+from .verify import run_checks
+from .regression_diff import audit_regression, compare_with_baseline
+from .manual_drift import find_drift
 
 __all__ = [
     "add_academic_heading",
@@ -141,4 +162,22 @@ __all__ = [
     "canonical_diff",
     "write_canonical",
     "scan_source",
+    "add_numbered_academic_heading",
+    "collect_toc_entries",
+    "collect_caption_entries",
+    "render_page_numbers",
+    "build_static_lists",
+    "expansion_required",
+    "find_dropped_expansions",
+    "assert_no_dropped_expansions",
+    "split_sentences",
+    "content_word_count",
+    "paragraph_metrics",
+    "audit_sentences",
+    "audit_claim_citations",
+    "audit_references",
+    "run_checks",
+    "compare_with_baseline",
+    "audit_regression",
+    "find_drift",
 ]

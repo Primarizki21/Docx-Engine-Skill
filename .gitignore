@@ -43,6 +43,8 @@ unpacked/
 output/
 tmp/
 *.tmp
+# Local development notes (not distributed)
+PLAYBOOK.md
 
 # OS / Editor files
 .DS_Store

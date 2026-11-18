@@ -9,7 +9,6 @@ import docx
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.shared import Cm, Pt, RGBColor
-
 _SPECS = (("DAFTAR ISI", "Static TOC Title", "Static TOC Entry"),
           ("DAFTAR GAMBAR", "Static LOF Title", "Static LOF Entry"),
           ("DAFTAR TABEL", "Static LOT Title", "Static LOT Entry"))

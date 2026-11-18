@@ -196,6 +196,9 @@ uv run docx-engine-regression ./document.docx
 
 # 7. Report manual drift from the generated baseline
 uv run docx-engine-drift ./document.docx
+
+# 8. Scan scripts for unsafe text mutation calls
+uv run docx-engine-mutation-guard ./scripts
 ```
 
 ---
